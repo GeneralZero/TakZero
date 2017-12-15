@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 #include "Cell.h"
 #include "Move.h"
 
@@ -21,29 +22,34 @@ public:
 	bool black_win;
 
 	//Game functions
-	void move(Play move);
-	void place(Play move);
-	void winner_place(Piece piece, Location location);
-	void winner_move(std::vector<Location>);
+	void PlayMove(Play move);
+	void PlayPlace(Play move);
+	void WinnerPlace(Piece piece, Location location);
+	void WinnerMove(std::vector<Location>);
 
-	void update_tops(Location location);
+	void UpdateTops(Location location);
 
-	void check_wall_crush(Location current_square, std::vector<Piece>);
+	void CheckWallCrush(Location current_square, std::vector<Piece>);
 
 	//Index paramaters
 	std::vector<uint8_t> distance_table;
 
 	//Index functions
-	uint16_t get_turn_index(Play move);
+	uint16_t GetTurnIndex(Play move);
+	uint16_t GetPlacementIndex(Play move);
+	uint16_t GetMoveIndex(Play move);
 
 	//Monte Carlo functions
 	Board* clone();
 	std::vector<Play> get_all_plays();
 
-
+	//Utility Finctions
+	uint16_t GetIndexFromLocation(Location location);
+	Location * GetLocationFromIndex(uint16_t index);
+	void print_board();
 
 private:
-	std::vector<Cell> board;
+	std::map<uint8_t, Cell> board;
 
 
 };

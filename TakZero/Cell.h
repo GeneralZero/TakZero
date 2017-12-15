@@ -1,5 +1,7 @@
 #pragma once
 
+#include <bitset>
+
 class Cell
 {
 public:
@@ -9,7 +11,7 @@ public:
 
 
 private:
-	std::bitset<64> stack;
+	std::bitset<3*64> stack;
 
 
 };

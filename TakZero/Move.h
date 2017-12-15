@@ -25,25 +25,20 @@ enum Direction
 	Left
 };
 
-typedef uint8_t Location[2];
+struct Location
+{
+	uint16_t x;
+	uint16_t y;
+};
 
 struct Play
 {
+	MoveType type;
 	uint16_t index;
-};
-
-
-struct Placement : Play
-{
 	Piece piece;
-	Location location[2];
-
-};
-
-struct Move : Play
-{
+	Location location;
 	Direction direction;
-	Location start[2];
-	Location end[2];
+	Location start;
+	Location end;
 	std::vector<Location> order;
 };
