@@ -1,14 +1,27 @@
 #pragma once
+#include <fstream>
+#include <map>
+#include <string>
 
-uint16_t cfg_max_playouts = 50000;
-uint8_t cfg_num_threads = 3;
-bool cfg_quiet = false;
-bool cfg_noise = true;
+class ConfigStore
+{
+public:
+	static ConfigStore& get()
+	{
+		static ConfigStore instance;
+		return instance;
+	}
+	void parseFile(std::ifstream& inStream);
+	template<typename _T>
+	_T getValue(std::string key);
 
-FILE* cfg_logfile_handle;
-
-uint8_t cfg_random_cnt = 30;
-
-double cfg_resignpct = 0.0;
-
-double cfg_puct = 2.8;
+	std::map<std::string, std::string> strings;
+	std::map<std::string, uint32_t> ints;
+	std::map<std::string, double> doubles;
+	std::map<std::string, bool> bools;
+	std::fstream cfg_logfile_handle;
+private:
+	ConfigStore() {};
+	ConfigStore(const ConfigStore&);
+	ConfigStore& operator=(const ConfigStore&);
+};

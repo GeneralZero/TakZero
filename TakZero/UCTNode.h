@@ -1,7 +1,12 @@
+#pragma once
+
 #include <mutex>
+#include <atomic>
 
 #include "config.h"
 #include "Board.h"
+#include "mutex.h"
+#include "FakeNetwork.h"
 
 class UCTNode {
 public:
@@ -30,7 +35,7 @@ public:
     double get_blackevals() const;
     void set_visits(int visits);
     void set_blackevals(double blacevals);
-    void set_eval(float eval);
+    void set_eval();
     void accumulate_eval(float eval);
     void virtual_loss(void);
     void virtual_loss_undo(void);
@@ -44,13 +49,13 @@ public:
 
     void sort_root_children(int color);
     UCTNode* get_best_root_child(bool turn_white);
-    std::mutex & get_mutex();
+	SMP::Mutex & get_mutex();
 
 private:
     UCTNode();
     void link_child(UCTNode * newchild);
     void link_nodelist(std::atomic<int> & nodecount,
-                       std::vector<Network::scored_node> & nodelist,
+                       std::vector<scored_node> & nodelist,
                        float prev_win_rate);
 
     // Tree data

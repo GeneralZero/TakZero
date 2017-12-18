@@ -1,11 +1,13 @@
 #pragma once
+
 #include <array>
+
+#include "Board.h"
+#include "Random.h"
 
 class Zobrist {
 public:
-	static std::array<std::array<uint64_t, FastBoard::MAXSQ>, 4> zobrist;
-	static std::array<std::array<uint64_t, FastBoard::MAXSQ * 2>, 2> zobrist_pris;
-	static std::array<uint64, 5>                                   zobrist_pass;
+	static std::array<std::array<uint64_t, 5 * 5 * 64>, 8> zobrist;
 
 	static void init_zobrist(Random & rng);
 };

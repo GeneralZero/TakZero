@@ -16,24 +16,25 @@
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "config.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <limits>
 #include <cmath>
-
+#include <random>
 #include <iostream>
 #include <vector>
 #include <functional>
 #include <algorithm>
-#include <random>
 #include <numeric>
+
 #include "UCTNode.h"
 #include "mutex.h"
 #include "UCTSearch.h"
+#include "Utility.h"
+#include "Random.h"
+
 
 UCTNode::UCTNode(int move_index, float score, float prev_win_rate)
     : m_move(move_index), m_score(score), m_prev_win_rate(prev_win_rate) {
@@ -73,6 +74,9 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
     // acquire the lock
     LOCK(get_mutex(), lock);
     // check whether somebody beat us to it (after taking the lock)
+	if (state.black_win || state.white_win) {
+		return false;
+	}
     if (has_children()) {
         return false;
     }
@@ -84,28 +88,26 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
     m_is_expanding = true;
     lock.unlock();
 
-    auto raw_netlist = Network::get_scored_moves(
-        &state, Network::Ensemble::RANDOM_ROTATION);
+    auto raw_netlist = FakeNetwork::get_scored_moves(
+        &state, FakeNetwork::Ensemble::DIRECT, 0);
 
     // DCNN returns winrate as side to move
-    auto black_win_rate = raw_netlist.second;
-    bool white_turn = state.board.white_turn;
+    auto board_win_rate = raw_netlist.second;
+	bool white_turn = state.white_turn;
+	// our search functions evaluate from black's point of view
+	if (white_turn) {
+		board_win_rate = 1.0f - board_win_rate;
+	}
 
-    // our search functions evaluate from black's point of view
-    if (white_turn) {
-        black_win_rate = 1.0f - black_win_rate;
-    }
-    win_rate = black_win_rate;
+	win_rate = board_win_rate;
 
-    std::vector<Network::scored_node> nodelist;
+    std::vector<scored_node> nodelist;
 
     auto legal_sum = 0.0f;
     for (auto& node : raw_netlist.first) {
         auto move_index = node.second;
-        if (!state.is_suicide(move_index, state.get_to_move())) {
-                nodelist.emplace_back(node);
-                legal_sum += node.first;
-        }
+        nodelist.emplace_back(node);
+        legal_sum += node.first;
     }
 
     // If the sum is 0 or a denormal, then don't try to normalize.
@@ -116,13 +118,13 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
         }
     }
 
-    link_nodelist(nodecount, nodelist, black_win_rate);
+    link_nodelist(nodecount, nodelist, win_rate);
 
     return true;
 }
 
 void UCTNode::link_nodelist(std::atomic<int> & nodecount,
-                            std::vector<Network::scored_node> & nodelist,
+                            std::vector<scored_node> & nodelist,
                             float prev_win_rate)
 {
     auto totalchildren = nodelist.size();
@@ -148,36 +150,9 @@ void UCTNode::link_nodelist(std::atomic<int> & nodecount,
     m_has_children = true;
 }
 
-void UCTNode::remove_sucide_moves(Board & state) {
-    UCTNode * child =  m_firstchild;
-
-    while (child != nullptr) {
-        auto move_index = child->get_move();
-
-        Board mystate = state;
-        bool white_turn = mystate.white_turn
-        mystate.play_move(move_index);
-
-        //If sucide White
-        if (white_turn && mystate.black_win) {
-            UCTNode * tmp = child->m_nextsibling;
-            delete_child(child);
-            child = tmp;
-            continue;
-        }
-        else if (!white_turn && mystate.white_win) {
-            UCTNode * tmp = child->m_nextsibling;
-            delete_child(child);
-            child = tmp;
-            continue;
-        }
-        child = child->m_nextsibling;
-    }
-}
-
 float UCTNode::eval_state(Board& state) {
-    auto raw_netlist = Network::get_scored_moves(
-        &state, Network::Ensemble::RANDOM_ROTATION);
+    auto raw_netlist = FakeNetwork::get_scored_moves(
+        &state, FakeNetwork::Ensemble::DIRECT, 0);
 
     // DCNN returns winrate as side to move
     auto net_eval = raw_netlist.second;
@@ -201,9 +176,11 @@ void UCTNode::dirichlet_noise(float epsilon, float alpha) {
 
     auto dirichlet_vector = std::vector<float>{};
 
-    std::gamma_distribution<float> gamma(alpha, 1.0f);
+	std::gamma_distribution<float> gamma(alpha, 1.0f);
+	std::default_random_engine generator;
+
     for (size_t i = 0; i < child_cnt; i++) {
-        dirichlet_vector.emplace_back(gamma(Random::get_Rng()));
+        dirichlet_vector.emplace_back(gamma(generator));
     }
 
     auto sample_sum = std::accumulate(begin(dirichlet_vector),
@@ -241,7 +218,8 @@ void UCTNode::randomize_first_proportionally() {
         child = child->m_nextsibling;
     }
 
-    auto pick = Random::get_Rng().randuint32(accum);
+	Random* r =  Random::get_Rng();
+    auto pick = r->randuint32(accum);
     auto index = size_t{0};
     for (size_t i = 0; i < accum_vector.size(); i++) {
         if (pick < accum_vector[i]) {
@@ -352,7 +330,7 @@ void UCTNode::set_blackevals(double blackevals) {
 }
 
 void UCTNode::accumulate_eval(float eval) {
-    atomic_add(m_black_win_rate, (double)eval);
+	Utils::atomic_add(m_black_win_rate, (double)eval);
 }
 
 UCTNode* UCTNode::uct_select_child(int color) {
@@ -393,7 +371,7 @@ UCTNode* UCTNode::uct_select_child(int color) {
         float winrate = child->get_eval(color);
         float psa = child->get_score();
         float denom = 1.0f + child->get_visits();
-        float puct = cfg_puct * psa * (numerator / denom);
+        float puct = ConfigStore::get().doubles.at("cfg_puct") * psa * (numerator / denom);
         float value = winrate + puct;
         assert(value > -1000.0f);
 

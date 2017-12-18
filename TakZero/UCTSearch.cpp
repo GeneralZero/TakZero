@@ -23,67 +23,98 @@
 #include "ThreadPool.h"
 #include "Timing.h"
 #include "Utility.h"
+#include <random>
 
 #include <cassert>
 
-
+extern Utils::ThreadPool thread_pool;
 
 UCTSearch::UCTSearch(Board & g)
     : m_rootstate(g) {
-    set_playout_limit(cfg_max_playouts);
+    set_playout_limit(ConfigStore::get().ints.at("cfg_max_playouts"));
 }
 
 SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) {
     const bool white_turn = currstate.white_turn;
-    const auto hash = currstate.get_hash();
-    const auto prev_boards = currstate.prev_boards;
+	auto hash = currstate.get_hash();
+
+	TTable::get_TT()->sync(hash, node);
 
     auto result = SearchResult{};
 
-    TTable::get_TT()->sync(hash, prev_boards, node);
     node->virtual_loss();
 
-
+	//Add children
     if (!node->has_children()) {
+		//Check if Game has ended
+		if (currstate.black_win) {
+			result = SearchResult::from_score((float)Black);
+		}
+		else if (currstate.white_win) {
+			result = SearchResult::from_score((float)White);
+		}
+		else if (m_nodes < MAX_TREE_SIZE) {
+			float eval;
 
-        if (m_nodes < MAX_TREE_SIZE) {
-            float eval;
-            auto success = node->create_children(m_nodes, currstate, eval);
-            if (success) {
-                result = SearchResult::from_eval(eval);
-            }
-        } else {
-            auto eval = node->eval_state(currstate);
-            result = SearchResult::from_eval(eval);
-        }
+			//Create All children 
+			auto success = node->create_children(m_nodes, currstate, eval);
+			if (success) {
+				result = SearchResult::from_eval(eval);
+			}
+		}
+		else {
+			auto eval = node->eval_state(currstate);
+			result = SearchResult::from_eval(eval);
+		}
     }
 
+	//Select part of Monte Carlo
     if (node->has_children() && !result.valid()) {
         auto next = node->uct_select_child(white_turn);
 
         if (next != nullptr) {
             auto move = next->get_move();
 
-			currstate.play_move(move);
-            result = play_simulation(currstate, next);
+			//Rollout part of Monte Carlo
+			while (!currstate.black_win && !currstate.white_win) {
+				auto moves = currstate.getAllPlays();
+
+				uint16_t random_int = rand() % moves.size();
+
+				Play random_move = moves.at(random_int);
+
+				if (random_move.type == MoveStack) {
+					currstate.PlayMove(random_move);
+				}
+				else {
+					currstate.PlayPlace(random_move);
+				}				
+			}
+			if (currstate.black_win) {
+				result = SearchResult::from_score((float)Black);
+			}
+			else if (currstate.white_win) {
+				result = SearchResult::from_score((float)White);
+			}
         }
     }
 
     if (result.valid()) {
+		//currstate.print_board();
         node->update(result.eval());
     }
     node->virtual_loss_undo();
-    TTable::get_TT()->update(hash, prev_boards, node);
+	TTable::get_TT()->update(hash, node);
 
     return result;
 }
 
 void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
-    if (cfg_quiet || !parent.has_children()) {
+    if (ConfigStore::get().bools.at("cfg_quiet") || !parent.has_children()) {
         return;
     }
 
-    const int white_turn = state.get_to_move();
+    const int white_turn = state.white_turn;
 
     // sort children, put best move on top
     m_root.sort_root_children(white_turn);
@@ -100,10 +131,10 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
     while (node != nullptr) {
         if (++movecount > 2 && !node->get_visits()) break;
 
-        std::string tmp = state.move_to_text(node->get_move());
+        std::string tmp = std::to_string(node->get_move());
         std::string pvstring(tmp);
 
-        printf("%4s -> %7d (V: %5.2f%%) (N: %5.2f%%) PV: ",
+        Utils::myprintf("%4s -> %7d (V: %5.2f%%) (N: %5.2f%%) PV: ",
             tmp.c_str(),
             node->get_visits(),
             node->get_visits() > 0 ? node->get_eval(white_turn)*100.0f : 0.0f,
@@ -111,25 +142,25 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
 
         Board tmpstate = state;
 
-        tmpstate.play_move(node->get_move());
+        tmpstate.PlayIndex(node->get_move());
         pvstring += " " + get_pv(tmpstate, *node);
 
-        printf("%s\n", pvstring.c_str());
+		Utils::myprintf("%s\n", pvstring.c_str());
 
         node = node->get_sibling();
     }
 }
 
 int UCTSearch::get_best_move() {
-    int white_turn = m_rootstate.board.get_to_move();
+	int white_turn = m_rootstate.white_turn;
 
     // Make sure best is first
     m_root.sort_root_children(white_turn);
 
     // Check whether to randomize the best move proportional
     // to the playout counts, early game only.
-    auto movenum = int(m_rootstate.get_movenum());
-    if (movenum < cfg_random_cnt) {
+    auto movenum = int(m_rootstate.move_number);
+    if (movenum < ConfigStore::get().ints.at("cfg_random_cnt")) {
         m_root.randomize_first_proportionally();
     }
 
@@ -149,10 +180,10 @@ int UCTSearch::get_best_move() {
     //If lost end game
     size_t movetresh = (m_rootstate.SIZE * m_rootstate.SIZE) * 4;
     // bad score and visited enough
-    if (bestscore < ((float)cfg_resignpct / 100.0f)
+    if (bestscore < ((float)ConfigStore::get().doubles.at("cfg_resignpct") / 100.0f)
         && visits > 500
-        && m_rootstate.m_movenum > movetresh) {
-        printf("Score looks bad. Resigning.\n");
+        && m_rootstate.move_number > movetresh) {
+		Utils::myprintf("Score looks bad. Resigning.\n");
         bestmove = -1;
     }
 
@@ -164,11 +195,11 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent) {
         return std::string();
     }
 
-    auto best_child = parent.get_best_root_child(state.get_to_move());
+    auto best_child = parent.get_best_root_child(state.white_turn);
     auto best_move = best_child->get_move();
-    auto res = state.move_to_text(best_move);
+    auto res = std::to_string(best_move);
 
-    state.play_move(best_move);
+    state.PlayIndex(best_move);
 
     auto next = get_pv(state, *best_child);
     if (!next.empty()) {
@@ -178,16 +209,16 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent) {
 }
 
 void UCTSearch::dump_analysis(int playouts) {
-    if (cfg_quiet) {
+    if (ConfigStore::get().bools.at("cfg_quiet")) {
         return;
     }
 
     Board tempstate = m_rootstate;
-    int color = tempstate.board.get_to_move();
+    bool white_turn = tempstate.white_turn;
 
     std::string pvstring = get_pv(tempstate, m_root);
-    float winrate = 100.0f * m_root.get_eval(color);
-    printf("Playouts: %d, Win: %5.2f%%, PV: %s\n",
+    float winrate = 100.0f * m_root.get_eval(white_turn);
+	Utils::myprintf("Playouts: %d, Win: %5.2f%%, PV: %s\n",
              playouts, winrate, pvstring.c_str());
 }
 
@@ -201,7 +232,7 @@ bool UCTSearch::playout_limit_reached() const {
 
 void UCTWorker::operator()() {
     do {
-        auto currstate = std::make_unique<Game>(m_rootstate);
+        auto currstate = std::make_unique<Board>(m_rootstate);
         auto result = m_search->play_simulation(*currstate, m_root);
         if (result.valid()) {
             m_search->increment_playouts();
@@ -213,38 +244,38 @@ void UCTSearch::increment_playouts() {
     m_playouts++;
 }
 
-int UCTSearch::think(bool white_turn) {
-    assert(m_playouts == 0);
-    assert(m_nodes == 0);
+int UCTSearch::think(Player color) {
+    assert(this->m_playouts == 0);
+    assert(this->m_nodes == 0);
 
     // Start counting time for us
-    m_rootstate.start_clock(white_turn);
+    m_rootstate.start_clock(color);
 
     // set side to move
-    m_rootstate.board.set_to_move(white_turn);
+    m_rootstate.white_turn = color;
 
     // set up timing info
     Time start;
 
-    m_rootstate.get_timecontrol().set_boardsize(m_rootstate.board.get_boardsize());
-    auto time_for_move = m_rootstate.get_timecontrol().max_time_for_move(white_turn);
+    m_rootstate.get_timecontrol().set_boardsize(m_rootstate.SIZE);
+    auto time_for_move = m_rootstate.get_timecontrol().max_time_for_move(color);
 
-    printf("Thinking at most %.1f seconds...\n", time_for_move/100.0f);
+	Utils::myprintf("Thinking at most %.1f seconds...\n", time_for_move/100.0f);
 
     // create a sorted list off legal moves (make sure we
     // play something legal and decent even in time trouble)
     float root_eval;
     m_root.create_children(m_nodes, m_rootstate, root_eval);
-    m_root.remove_sucide_moves(m_rootstate);
-    if (cfg_noise) {
+ 
+    if (ConfigStore::get().bools.at("cfg_noise")) {
         m_root.dirichlet_noise(0.25f, 0.03f);
     }
 
-    printf("NN eval=%f\n",
-             (!white_turn ? root_eval : 1.0f - root_eval));
+	Utils::myprintf("NN winrate_on_board=%f\n",
+             (root_eval));
 
     m_run = true;
-    int cpus = cfg_num_threads;
+    int cpus = ConfigStore::get().ints.at("cfg_num_threads");
     Utils::ThreadGroup tg(thread_pool);
     for (int i = 1; i < cpus; i++) {
         tg.add_task(UCTWorker(m_rootstate, this, &m_root));
@@ -260,7 +291,7 @@ int UCTSearch::think(bool white_turn) {
             increment_playouts();
         }
 
-        Time elapsed;
+		Time elapsed;
         int centiseconds_elapsed = Time::timediff(start, elapsed);
 
         // output some stats every few seconds
@@ -277,21 +308,18 @@ int UCTSearch::think(bool white_turn) {
     // stop the search
     m_run = false;
     tg.wait_all();
-    m_rootstate.stop_clock(white_turn);
-    if (!m_root.has_children()) {
-        return FastBoard::PASS;
-    }
+    m_rootstate.stop_clock(color);
 
     // display search info
-    printf("\n");
+	Utils::myprintf("\n");
 
     dump_stats(m_rootstate, m_root);
-    Training::record(m_rootstate, m_root);
+    //Training::record(m_rootstate, m_root);
 
     Time elapsed;
     int centiseconds_elapsed = Time::timediff(start, elapsed);
     if (centiseconds_elapsed > 0) {
-        printf("%d visits, %d nodes, %d playouts, %d n/s\n\n",
+		Utils::myprintf("%d visits, %d nodes, %d playouts, %d n/s\n\n",
                  m_root.get_visits(),
                  static_cast<int>(m_nodes),
                  static_cast<int>(m_playouts),
@@ -306,12 +334,13 @@ void UCTSearch::ponder() {
     assert(m_nodes == 0);
 
     m_run = true;
-    int cpus = cfg_num_threads;
+    int cpus = ConfigStore::get().ints.at("cfg_num_threads") ;
     Utils::ThreadGroup tg(thread_pool);
     for (int i = 1; i < cpus; i++) {
         tg.add_task(UCTWorker(m_rootstate, this, &m_root));
     }
     do {
+		//Search Part of Monte Carlo
         auto currstate = std::make_unique<Board>(m_rootstate);
         auto result = play_simulation(*currstate, &m_root);
         if (result.valid()) {
@@ -323,10 +352,10 @@ void UCTSearch::ponder() {
     m_run = false;
     tg.wait_all();
     // display search info
-    printf("\n");
+	Utils::myprintf("\n");
     dump_stats(m_rootstate, m_root);
 
-    printf("\n%d visits, %d nodes\n\n", m_root.get_visits(), (int)m_nodes);
+	Utils::myprintf("\n%d visits, %d nodes\n\n", m_root.get_visits(), (int)m_nodes);
 }
 
 void UCTSearch::set_playout_limit(int playouts) {

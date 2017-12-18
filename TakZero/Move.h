@@ -1,44 +1,51 @@
+#pragma once
+
 #include <vector>
 
 enum Piece
 {
-	Empty,
-	White_Flat,
-	Black_Flat,
-	White_Standing,
-	Black_Standing,
-	White_Capstone,
-	Black_Capstone
+	PieceEmpty=0,
+	White_Flat = 2,
+	Black_Flat = 3,
+	White_Standing = 4,
+	Black_Standing = 5,
+	White_Capstone = 6,
+	Black_Capstone = 7
+};
+
+enum Player {
+	White= 0,
+	Black = 1
+};
+
+enum PieceType
+{
+	PieceTypeEmpty = 0,
+	Flat = 2,
+	Standing = 4,
+	Capstone = 6,
 };
 
 enum MoveType
 {
+	Empty,
 	Placement,
 	MoveStack
 };
 
-enum Direction
-{
-	Up,
-	Right,
-	Down,
-	Left
-};
-
 struct Location
 {
-	uint16_t x;
-	uint16_t y;
+	uint8_t x;
+	uint8_t y;
 };
 
 struct Play
 {
 	MoveType type;
 	uint16_t index;
-	Piece piece;
+	PieceType piece;
 	Location location;
-	Direction direction;
 	Location start;
 	Location end;
-	std::vector<Location> order;
+	std::vector<uint8_t> order;
 };
