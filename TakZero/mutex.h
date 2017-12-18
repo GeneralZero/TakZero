@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef MUTEX_H_
-#define MUTEX_H_
-
 #include "config.h"
 #include <atomic>
 
@@ -32,5 +29,3 @@ namespace SMP {
 
 // Avoids accidentally creating a temporary
 #define LOCK(mutex, lock) SMP::Lock lock((mutex))
-
-#endif // !MUTEX_H_

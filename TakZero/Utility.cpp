@@ -1,4 +1,7 @@
+#include "config.h"
+
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -10,7 +13,6 @@
 #include <sys/select.h>
 #endif
 
-#include "config.h"
 #include "Utility.h"
 
 Utils::ThreadPool thread_pool;
@@ -77,30 +79,83 @@ bool Utils::input_pending(void) {
 static std::mutex IOmutex;
 
 void Utils::myprintf(const char *fmt, ...) {
-	if (ConfigStore::get().bools.at("cfg_quiet")) return;
+	if (cfg_quiet) return;
 	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 
-	if (!cfg_logfile_handle.is_open()) {
-
-		cfg_logfile_handle.open("Tak.log", std::fstream::out);
+	if (cfg_logfile_handle) {
+		std::lock_guard<std::mutex> lock(IOmutex);
+		va_start(ap, fmt);
+		vfprintf(cfg_logfile_handle, fmt, ap);
+		va_end(ap);
 	}
-	
-	std::lock_guard<std::mutex> lock(IOmutex);
+}
+
+void Utils::gtp_printf(int id, const char *fmt, ...) {
+	va_list ap;
+
+	if (id != -1) {
+		fprintf(stdout, "=%d ", id);
+	}
+	else {
+		fprintf(stdout, "= ");
+	}
+
 	va_start(ap, fmt);
-	cfg_logfile_handle << fmt << ap;
+	vfprintf(stdout, fmt, ap);
 	va_end(ap);
+	printf("\n\n");
+
+	if (cfg_logfile_handle) {
+		std::lock_guard<std::mutex> lock(IOmutex);
+		if (id != -1) {
+			fprintf(cfg_logfile_handle, "=%d ", id);
+		}
+		else {
+			fprintf(cfg_logfile_handle, "= ");
+		}
+		va_start(ap, fmt);
+		vfprintf(cfg_logfile_handle, fmt, ap);
+		va_end(ap);
+		fprintf(cfg_logfile_handle, "\n\n");
+	}
+}
+
+void Utils::gtp_fail_printf(int id, const char *fmt, ...) {
+	va_list ap;
+
+	if (id != -1) {
+		fprintf(stdout, "?%d ", id);
+	}
+	else {
+		fprintf(stdout, "? ");
+	}
+
+	va_start(ap, fmt);
+	vfprintf(stdout, fmt, ap);
+	va_end(ap);
+	printf("\n\n");
+
+	if (cfg_logfile_handle) {
+		std::lock_guard<std::mutex> lock(IOmutex);
+		if (id != -1) {
+			fprintf(cfg_logfile_handle, "?%d ", id);
+		}
+		else {
+			fprintf(cfg_logfile_handle, "? ");
+		}
+		va_start(ap, fmt);
+		vfprintf(cfg_logfile_handle, fmt, ap);
+		va_end(ap);
+		fprintf(cfg_logfile_handle, "\n\n");
+	}
 }
 
 void Utils::log_input(std::string input) {
-	if (!cfg_logfile_handle.is_open()) {
-
-		cfg_logfile_handle.open("Tak.log", std::fstream::out);
+	if (cfg_logfile_handle) {
+		std::lock_guard<std::mutex> lock(IOmutex);
+		fprintf(cfg_logfile_handle, ">>%s\n", input.c_str());
 	}
-
-	std::lock_guard<std::mutex> lock(IOmutex);
-	cfg_logfile_handle << ">>%s\n" << input.c_str();
-
 }

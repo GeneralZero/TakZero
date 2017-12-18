@@ -1,5 +1,3 @@
-#pragma once
-
 #include <cstddef>
 #include <vector>
 #include <thread>
@@ -9,8 +7,6 @@
 #include <memory>
 #include <future>
 #include <functional>
-
-
 
 namespace Utils {
 

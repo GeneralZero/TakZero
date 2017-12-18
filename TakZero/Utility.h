@@ -1,13 +1,16 @@
 #include "Move.h"
 
+#include "config.h"
 #include <string>
 #include <atomic>
-#include <fstream>
 #include "ThreadPool.h"
 
+extern Utils::ThreadPool thread_pool;
+
 namespace Utils {
-	static std::fstream cfg_logfile_handle;
 	void myprintf(const char *fmt, ...);
+	void gtp_printf(int id, const char *fmt, ...);
+	void gtp_fail_printf(int id, const char *fmt, ...);
 	void log_input(std::string input);
 	bool input_pending();
 

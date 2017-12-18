@@ -16,23 +16,17 @@ public:
         return SearchResult(eval);
     }
     static SearchResult from_score(float board_score) {
-        if (board_score == (float)Black) {
-            return SearchResult((float)Black);
-        } else if (board_score == (float)White) {
-            return SearchResult((float)White);
+        if (board_score > 0.0f) {
+            return SearchResult(1.0f);
+        } else if (board_score < 0.0f) {
+            return SearchResult(0.0f);
         } else {
             return SearchResult(0.5f);
         }
     }
 private:
     explicit SearchResult(float eval)
-        : m_valid(false), m_eval(eval) {
-		if (eval == (float)Black)
-			m_valid = true;
-		else if (eval == (float)White) {
-			m_valid = true;
-		}
-	}
+        : m_valid(true), m_eval(eval) {}
     bool m_valid{false};
     float m_eval{0.0f};
 };
@@ -44,9 +38,9 @@ public:
         40 bytes, so limit to ~1.6G.
     */
     static constexpr auto MAX_TREE_SIZE = 40'000'000;
-	
+
     UCTSearch(Board & g);
-    int think(Player white_turn);
+    int think(bool white_turn);
     void set_playout_limit(int playouts);
     void set_analyzing(bool flag);
     void set_quiet(bool flag);
