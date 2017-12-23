@@ -28,7 +28,7 @@ public:
     float get_score() const;
 	float get_prev_score() const;
     void set_score(float score);
-    float get_eval(bool white_turn) const;
+    float get_eval(Player turn) const;
 	double get_black_wins() const;
     void virtual_loss(void);
     void virtual_loss_undo(void);
@@ -37,13 +37,16 @@ public:
 	double get_percent_black_wins() const;
 	void set_black_wins(double black_wins);
 	void accumulate_eval(double win);
-	UCTNode* uct_select_child(int color);
-	void sort_moves(bool white_turn);
-    UCTNode* get_best_root_child(bool turn_white);
+	UCTNode * uct_select_child(Player turn);
+	void sort_moves(Player turn);
+    UCTNode* get_best_root_child(Player turn);
 	SMP::Mutex& UCTNode::get_mutex();
 
 	std::vector<UCTNode*> possoble_moves;
 
+	float m_curent_score;
+	float get_cur_score() const;
+	void set_cur_score(float score);
 private:
     UCTNode();
 
@@ -56,6 +59,7 @@ private:
     std::atomic<uint64_t> m_visits{0};
     std::atomic<uint64_t> m_virtual_loss{0};
     // UCT eval
+
     float m_score;
     float m_prev_win_rate;
     std::atomic<double> m_black_win{0};

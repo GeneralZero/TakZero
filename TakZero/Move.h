@@ -4,13 +4,13 @@
 
 enum Piece
 {
-	Empty,
-	White_Flat,
-	Black_Flat,
-	White_Standing,
-	Black_Standing,
-	White_Capstone,
-	Black_Capstone
+	Empty =0,
+	White_Flat =2,
+	Black_Flat =3,
+	White_Standing =4,
+	Black_Standing =5,
+	White_Capstone =6,
+	Black_Capstone =7
 };
 
 enum PieceType {

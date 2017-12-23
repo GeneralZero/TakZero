@@ -1,8 +1,10 @@
 #include "Training.h"
 #include "FakeNetwork.h"
+#include <experimental/filesystem>
+#include <direct.h>
 
 #include "MD5.h"
-
+#include <iostream>
 #include "H5Cpp.h"
 
 std::vector<TimeStep> Training::m_data{};
@@ -53,13 +55,13 @@ void Training::dump_game()
 	//Create MD5 hash
 
 	auto data_md5 = MD5::MD5((char*)this->m_data.data(), this->m_data.size() * sizeof(TimeStep));
-	std::string file_name = data_md5.hexdigest();
+	std::string file_name = "Game_" + data_md5.hexdigest() + ".hdf5";
 
 	//Save Game
 	save_game(directory, file_name);
 
 	//Upload Game
-	uploadGame(directory, file_name);
+	//uploadGame(directory, file_name);
 }
 
 int Training::get_new_index(uint8_t index, uint8_t transformation)
@@ -207,64 +209,82 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 	return output;
 }
 
-void Training::save_game(std::string foldername, std::string file_name)
+int Training::save_game(std::string foldername, std::string file_name)
 {
-	H5::H5File file(foldername + "\\" + file_name, H5F_ACC_TRUNC);
+	const size_t size = this->m_data.size();
 
-	std::vector<NNInput> planes;
-
-	std::vector<PlayProb> probs;
-	std::vector<double> win_rates;
-
-
-	for (size_t i = 0; i < this->m_data.size(); i++)
-	{
-		planes.push_back(this->m_data[i].planes);
-		probs.push_back(this->m_data[i].probabilities);
-		win_rates.push_back(this->m_data[i].net_winrate);
+	std::experimental::filesystem::path myDirectory = foldername;
+	if (!std::experimental::filesystem::is_directory(foldername)) {
+		std::experimental::filesystem::create_directory(foldername);
+		_chdir(foldername.c_str());
 	}
 
+	//std::string location = foldername + "\\" + file_name;
+	H5::H5File file(file_name.c_str(), H5F_ACC_TRUNC);
+
+	NNInput *planes = new NNInput[size];
+	PlayProb * probs = new PlayProb[size];
+	double *win_rates = new double[size];
+
+	for (size_t i = 0; i < size; i++)
+	{
+		std::memcpy(planes[i].data(), this->m_data[i].planes.data(), sizeof(NNInput));
+		std::memcpy(probs[i].data(), this->m_data[i].probabilities.data(), sizeof(PlayProb));
+		win_rates[i] = this->m_data[i].net_winrate;
+	}
 	//Planes input
-	hsize_t     x_input[3] = {planes.size(),8, 5*5*32};
-	
+	hsize_t     x_input[3] = { size,8, 5 * 5 * 32 };
+
 	H5::DataSpace x_dataspace(3, x_input);
 
-	H5::DSetCreatPropList  plist = H5::DSetCreatPropList();
-	plist.setDeflate(9);
+	H5::DSetCreatPropList  x_plist = H5::DSetCreatPropList();
+	x_plist.setChunk(3, x_input);
+	x_plist.setDeflate(9);
 
 	H5::IntType x_datatype(H5::PredType::NATIVE_INT8);
 	x_datatype.setOrder(H5T_ORDER_LE);
 
-	H5::DataSet x_dataset = file.createDataSet("x_input", x_datatype, x_dataspace, plist);
+	H5::DataSet x_dataset = file.createDataSet("x_input", x_datatype, x_dataspace, x_plist);
 
-	x_dataset.write(planes.data(), H5::PredType::NATIVE_INT8);
+	x_dataset.write(planes, H5::PredType::NATIVE_INT8);
 
 	//probs output
-	hsize_t     y_input[2] = { probs.size(),1575 };
+	hsize_t     y_input[2] = { size,1575 };
 
 	H5::DataSpace y_dataspace(2, y_input);
+
+	H5::DSetCreatPropList  y_plist = H5::DSetCreatPropList();
+	y_plist.setChunk(2, y_input);
+	y_plist.setDeflate(9);
 
 	H5::IntType y_datatype(H5::PredType::NATIVE_DOUBLE);
 	y_datatype.setOrder(H5T_ORDER_LE);
 
-	H5::DataSet y_dataset = file.createDataSet("y_input_1", y_datatype, y_dataspace, plist);
+	H5::DataSet y_dataset = file.createDataSet("y_input_1", y_datatype, y_dataspace, y_plist);
 
-	y_dataset.write(probs.data(), H5::PredType::NATIVE_DOUBLE);
+	y_dataset.write(probs, H5::PredType::NATIVE_DOUBLE);
 
 	//winrate output
-	hsize_t     y_input_1[1] = { win_rates.size()};
+	//const uint16_t a = win_rates.size();
+	hsize_t     y_input_1[1] = { size };
 
 	H5::DataSpace y_dataspace_1(1, y_input_1);
+
+	H5::DSetCreatPropList  y_plist_1 = H5::DSetCreatPropList();
+	y_plist_1.setChunk(1, y_input_1);
+	y_plist_1.setDeflate(9);
 
 	H5::IntType y_datatype_1(H5::PredType::NATIVE_DOUBLE);
 	y_datatype_1.setOrder(H5T_ORDER_LE);
 
-	H5::DataSet y_dataset_1 = file.createDataSet("y_input_2", y_datatype_1, y_dataspace_1, plist);
+	H5::DataSet y_dataset_1 = file.createDataSet("y_input_2", y_datatype_1, y_dataspace_1, y_plist_1);
 
-	y_dataset_1.write(win_rates.data(), H5::PredType::NATIVE_DOUBLE);
+	y_dataset_1.write(win_rates, H5::PredType::NATIVE_DOUBLE);
 
-	//Close
 	file.close();
+
+	m_data.clear();
+	return 1;
 }
 
 int Training::uploadGame(std::string foldername, std::string filename)

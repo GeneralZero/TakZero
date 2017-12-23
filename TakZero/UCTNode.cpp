@@ -58,6 +58,16 @@ SMP::Mutex& UCTNode::get_mutex() {
     return m_nodemutex;
 }
 
+float UCTNode::get_cur_score() const
+{
+	return m_curent_score;
+}
+
+void UCTNode::set_cur_score(float score)
+{
+	m_curent_score = score;
+}
+
 bool UCTNode::create_children(std::atomic<int> & nodecount,
                               Board & state,
                               float & win_rate) {
@@ -84,6 +94,10 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
 
     auto raw_netlist = FakeNetwork::get_scored_moves(
         &state);
+
+	//if (raw_netlist.first.size() < 20) {
+	//	state.print_board();
+	//}
 
     // DCNN returns winrate as side to move
 	win_rate = raw_netlist.second;
@@ -240,7 +254,7 @@ int UCTNode::get_visits() const {
     return m_visits;
 }
 
-float UCTNode::get_eval(bool white_turn) const {
+float UCTNode::get_eval(Player turn) const {
     // Due to the use of atomic updates and virtual losses, it is
     // possible for the visit count to change underneath us. Make sure
     // to return a consistent result to the caller by caching the values.
@@ -248,11 +262,11 @@ float UCTNode::get_eval(bool white_turn) const {
     auto visits = get_visits() + virtual_loss;
     if (visits > 0) {
         auto black_wins = get_black_wins();
-        if (white_turn) {
+        if (turn == White) {
 			black_wins += virtual_loss;
         }
         auto score = static_cast<float>(black_wins / (double)visits);
-        if (white_turn) {
+        if (turn == White) {
             score = 1.0f - score;
         }
         return score;
@@ -260,7 +274,7 @@ float UCTNode::get_eval(bool white_turn) const {
         // If a node has not been visited yet,
         // the eval is that of the parent.
         auto eval = m_prev_win_rate;
-        if (white_turn) {
+        if (turn == White) {
             eval = 1.0f - eval;
         }
         return eval;
@@ -283,7 +297,7 @@ void UCTNode::accumulate_eval(double win) {
 	Utils::atomic_add(m_black_win, win);
 }
 
-UCTNode* UCTNode::uct_select_child(int color) {
+UCTNode* UCTNode::uct_select_child(Player turn) {
     UCTNode * best = nullptr;
     float best_value = -1000.0f;
 
@@ -303,11 +317,12 @@ UCTNode* UCTNode::uct_select_child(int color) {
 
 	//update values
 	for (size_t i = 0; i < this->possoble_moves.size(); i++){
-		float winrate = this->possoble_moves[i]->get_eval(color);
+		float winrate = this->possoble_moves[i]->get_eval(turn);
 		float psa = this->possoble_moves[i]->get_score();
 		float denom = 1.0f + this->possoble_moves[i]->get_visits();
 		float puct = ConfigStore::get().doubles.at("cfg_puct") * psa * (numerator / denom);
 		float value = winrate + puct;
+		this->possoble_moves[i]->set_cur_score(value);
 
 		if (value > best_value) {
 			best_value = value;
@@ -320,11 +335,11 @@ UCTNode* UCTNode::uct_select_child(int color) {
     return best;
 }
 
-void UCTNode::sort_moves(bool white_turn) {
+void UCTNode::sort_moves(Player turn) {
     LOCK(get_mutex(), lock);
 
 	//Is White
-	if (white_turn) {
+	if (turn == White) {
 		std::sort(this->possoble_moves.begin(), this->possoble_moves.end(), [](UCTNode const* a, UCTNode const* b) {
 			if (a->get_visits() > b->get_visits()) {
 				return true;
@@ -382,9 +397,9 @@ void UCTNode::sort_moves(bool white_turn) {
 }
 
 
-UCTNode* UCTNode::get_best_root_child(bool white_turn) {
+UCTNode* UCTNode::get_best_root_child(Player turn) {
  	assert(this->possoble_moves.size() != 0);
-	sort_moves(white_turn);
+	sort_moves(turn);
 	
 	return this->possoble_moves.at(0);
 }

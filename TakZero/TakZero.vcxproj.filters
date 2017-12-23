@@ -63,6 +63,12 @@
     <ClInclude Include="MD5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hdf_wrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TestingBoard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc">
@@ -113,6 +119,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Training.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestingBoard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

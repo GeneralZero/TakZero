@@ -37,7 +37,13 @@ UCTSearch::UCTSearch(Board & g)
 }
 
 SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) {
-    const bool white_turn = currstate.white_turn;
+	Player turn;
+	if (currstate.white_turn) {
+		turn = White;
+	}
+	else {
+		turn = Black;
+	}
 	auto hash = currstate.get_hash();
 
 	TTable::get_TT()->sync(hash, node);
@@ -50,25 +56,16 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
     if (!node->has_children()) {
 		//Check if Game has ended
 		if (currstate.black_win && currstate.white_win) {
-			result = SearchResult::from_score(3.0, true);
+			this->tie_win++;
+			result = SearchResult::from_score(3.0);
 		}
 		else if (currstate.black_win) {
-			if (this->turn == White) {
-				//if searching for a white move remove node
-				result = SearchResult::from_score((float)Black, true);
-			}
-			else{
-				result = SearchResult::from_score((float)Black, false);
-			}
+			this->black_win++;
+			result = SearchResult::from_score((float)Black);
 		}
 		else if (currstate.white_win) {
-			if (this->turn == Black) {
-				//if searching for a white move remove node
-				result = SearchResult::from_score((float)White, true);
-			}
-			else {
-				result = SearchResult::from_score((float)White, false);
-			}
+			this->white_win++;
+			result = SearchResult::from_score((float)White);
 		}
 		else if (m_nodes < MAX_TREE_SIZE) {
 			float eval;
@@ -76,8 +73,6 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 			//Create All children 
 			auto success = node->create_children(m_nodes, currstate, eval);
 			if (success) {
-				//remove invalid nodes
-				//node->remove_invalid_moves(currstate);
 				result = SearchResult::from_eval(eval);
 			}
 		}
@@ -91,13 +86,11 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 
     if (node->has_children() && !result.valid()) {
 		//Select part of Monte Carlo
-        auto next = node->uct_select_child(white_turn);
+        auto next = node->uct_select_child(turn);
+
 
         if (next != nullptr) {
             move = next->get_move();
-
-			//remove invalid nodes
-			//node->remove_invalid_moves(currstate);
 
 			currstate.PlayIndex(move);
 			result = play_simulation(currstate, next);
@@ -118,6 +111,13 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
     if (ConfigStore::get().bools.at("cfg_quiet") || !parent.has_children()) {
         return;
     }
+	Player turn;
+	if (state.white_turn) {
+		turn = White;
+	}
+	else {
+		turn = Black;
+	}
 
     // sort moves, put best move on top
     m_root->sort_moves(turn);
@@ -151,7 +151,7 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
 	}
 }
 
-int UCTSearch::get_best_move() {
+int UCTSearch::get_best_move(Player turn) {
     // Make sure best is first
     m_root->sort_moves(turn);
 
@@ -185,6 +185,13 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent, uint8_t depth) {
     if (!parent.has_children()) {
         return std::string();
     }
+	Player turn;
+	if (state.white_turn) {
+		turn = White;
+	}
+	else {
+		turn = Black;
+	}
 
     auto best_child = parent.get_best_root_child(turn);
     auto best_move = best_child->get_move();
@@ -203,12 +210,17 @@ void UCTSearch::dump_analysis(int playouts) {
     if (ConfigStore::get().bools.at("cfg_quiet")) {
         return;
     }
-
+	Player turn;
     Board tempstate = m_rootstate;
-    bool white_turn = tempstate.white_turn;
+	if (tempstate.white_turn) {
+		turn = White;
+	}
+	else {
+		turn = Black;
+	}
 
     std::string pvstring = get_pv(tempstate, *m_root, 0);
-    float winrate = 100.0f * m_root->get_eval(white_turn);
+    float winrate = 100.0f * m_root->get_eval(turn);
 	Utils::myprintf("Playouts: %d, Win: %5.2f%%, PV: %s\n",
              playouts, winrate, pvstring.c_str());
 }
@@ -235,10 +247,9 @@ void UCTSearch::increment_playouts() {
     m_playouts++;
 }
 
-int UCTSearch::think(Player color, Training training) {
-	this->turn = color;
+int UCTSearch::think(Player turn, Training training) {
     // Start counting time for us
-    m_rootstate.start_clock(color);
+    m_rootstate.start_clock(turn);
 
     // set side to move
     //m_rootstate.white_turn = color;
@@ -247,7 +258,7 @@ int UCTSearch::think(Player color, Training training) {
     Time start;
 
     m_rootstate.get_timecontrol().set_boardsize(m_rootstate.SIZE);
-    auto time_for_move = m_rootstate.get_timecontrol().max_time_for_move(color);
+    auto time_for_move = m_rootstate.get_timecontrol().max_time_for_move(turn);
 
 	if (turn == White) {
 		Utils::myprintf("White Turn\n");
@@ -263,9 +274,6 @@ int UCTSearch::think(Player color, Training training) {
 
 	m_root->create_children(m_nodes, m_rootstate, root_eval);
 	
-
-	//Remove dupplicate nodes
-	//m_root.remove_invalid_moves(m_rootstate);
  
 	//Expand with noise
     if (ConfigStore::get().bools.at("cfg_noise")) {
@@ -303,14 +311,14 @@ int UCTSearch::think(Player color, Training training) {
             dump_analysis(static_cast<int>(m_playouts));
         }
         keeprunning  = is_running();
-        keeprunning &= (centiseconds_elapsed < time_for_move);
+        keeprunning &= (centiseconds_elapsed < time_for_move +5);
         keeprunning &= !playout_limit_reached();
     } while(keeprunning);
 
     // stop the search
     m_run = false;
     tg.wait_all();
-    m_rootstate.stop_clock(color);
+    m_rootstate.stop_clock(turn);
 
     // display search info
 	Utils::myprintf("\n");
@@ -327,7 +335,7 @@ int UCTSearch::think(Player color, Training training) {
                  static_cast<int>(m_playouts),
                  (m_playouts * 100) / (centiseconds_elapsed+1));
     }
-    int bestmove = get_best_move();
+    int bestmove = get_best_move(turn);
 
     return bestmove;
 }
