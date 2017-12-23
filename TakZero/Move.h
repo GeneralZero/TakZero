@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 enum Piece
@@ -9,6 +11,12 @@ enum Piece
 	Black_Standing,
 	White_Capstone,
 	Black_Capstone
+};
+
+enum PieceType {
+	Flat = 2,
+	Standing = 4,
+	Capstone = 6
 };
 
 enum MoveType
@@ -25,20 +33,24 @@ enum Direction
 	Left
 };
 
+enum Player {
+	White,
+	Black
+};
+
 struct Location
 {
-	uint16_t x;
-	uint16_t y;
+	uint8_t x;
+	uint8_t y;
 };
 
 struct Play
 {
 	MoveType type;
 	uint16_t index;
-	Piece piece;
+	PieceType piece;
 	Location location;
-	Direction direction;
 	Location start;
 	Location end;
-	std::vector<Location> order;
+	std::vector<uint8_t> order;
 };

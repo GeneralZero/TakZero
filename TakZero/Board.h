@@ -1,13 +1,16 @@
 #pragma once
 #include <vector>
-#include <map>
-#include "Cell.h"
+#include <array>
 #include "Move.h"
+#include "TimeControl.h"
+
+typedef std::array< uint8_t, 5 * 5 * 32> FastBoard;
 
 class Board
 {
 public:
 	Board(uint8_t size);
+	Board();
 	~Board();
 	
 	//Game paramaters
@@ -24,32 +27,57 @@ public:
 	//Game functions
 	void PlayMove(Play move);
 	void PlayPlace(Play move);
-	void WinnerPlace(Piece piece, Location location);
+	void WinnerPlace(PieceType piece, Location location);
 	void WinnerMove(std::vector<Location>);
+
+	void PrintMove(Play move);
+
+	bool ValidMove(int index);
 
 	void UpdateTops(Location location);
 
-	void CheckWallCrush(Location current_square, std::vector<Piece>);
+	uint16_t GetPlayIndex(Play move);
+
+	void WallCrush(Location current_square, std::vector<Piece>);
+
+	uint8_t getArrayIndex(uint8_t x, uint8_t y);
+
+	void PlayIndex(Play move);
+
+	void PlayIndex(int index);
 
 	//Index paramaters
 	std::vector<uint8_t> distance_table;
 
 	//Index functions
-	uint16_t GetTurnIndex(Play move);
 	uint16_t GetPlacementIndex(Play move);
 	uint16_t GetMoveIndex(Play move);
 
-	//Monte Carlo functions
-	Board* clone();
-	std::vector<Play> get_all_plays();
+	std::vector<std::vector<uint8_t>> GenerateMoveArrays(uint8_t distance, uint8_t to_move, bool cap);
+
+	uint64_t get_hash();
+
+	std::vector<Play> getAllPlays();
+
+	Play GetMoveFromIndex(uint16_t move);
+
+	void stop_clock(Player color);
+
+	void start_clock(Player color);
+
+	TimeControl & get_timecontrol();
+
 
 	//Utility Finctions
-	uint16_t GetIndexFromLocation(Location location);
-	Location * GetLocationFromIndex(uint16_t index);
 	void print_board();
+	void SaveFastBoard();
+
+	std::array<FastBoard, 8> getMLData();
+
+	std::array<std::vector<Piece>, 25> board;
 
 private:
-	std::map<uint8_t, Cell> board;
+	std::vector<FastBoard> prev_boards;
 
-
+	TimeControl m_timecontrol;
 };

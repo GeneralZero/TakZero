@@ -1,7 +1,8 @@
 #include "config.h"
 
 #include <vector>
-
+#include "mutex.h"
+#include "ThreadPool.h"
 #include "TTable.h"
 
 TTable* TTable::get_TT(void) {
@@ -25,7 +26,7 @@ void TTable::update(uint64_t hash, const UCTNode * node) {
     */
     m_buckets[index].m_hash       = hash;
     m_buckets[index].m_visits     = node->get_visits();
-    m_buckets[index].m_eval_sum   = node->get_blackevals();
+	m_buckets[index].m_black_wins = node->get_black_wins();
 }
 
 void TTable::sync(uint64_t hash, UCTNode * node) {
@@ -49,6 +50,6 @@ void TTable::sync(uint64_t hash, UCTNode * node) {
             entry in TT has more info (new node)
         */
         node->set_visits(m_buckets[index].m_visits);
-        node->set_blackevals(m_buckets[index].m_eval_sum);
+        node->set_black_wins(m_buckets[index].m_black_wins);
     }
 }

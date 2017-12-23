@@ -11,7 +11,7 @@ public:
 
     uint64_t m_hash{0};
     int m_visits;
-    double m_eval_sum;
+    double m_black_wins;
 };
 
 class TTable {

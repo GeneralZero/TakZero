@@ -1,6 +1,7 @@
 #include <cassert>
 #include "TimeControl.h"
 #include "Utility.h"
+#include "config.h"
 
 using namespace Utils;
 
@@ -34,11 +35,11 @@ void TimeControl::reset_clocks() {
 	}
 }
 
-void TimeControl::start(int color) {
+void TimeControl::start(Player color) {
 	m_times[color] = Time();
 }
 
-void TimeControl::stop(int color) {
+void TimeControl::stop(Player color) {
 	Time stop;
 	int elapsed = Time::timediff(m_times[color], stop);
 
@@ -118,11 +119,11 @@ void TimeControl::display_times() {
 	myprintf("\n");
 }
 
-int TimeControl::max_time_for_move(int color) {
+int TimeControl::max_time_for_move(Player color) {
 	/*
 	always keep a 1 second margin for net hiccups
 	*/
-	const int BUFFER_CENTISECS = cfg_lagbuffer_cs;
+	const int BUFFER_CENTISECS = ConfigStore::get().ints.at("cfg_lagbuffer_cs");
 
 	int timealloc = 0;
 
@@ -182,7 +183,7 @@ int TimeControl::max_time_for_move(int color) {
 	return timealloc;
 }
 
-void TimeControl::adjust_time(int color, int time, int stones) {
+void TimeControl::adjust_time(Player color, int time, int stones) {
 	m_remaining_time[color] = time;
 	// From pachi: some GTP things send 0 0 at the end of main time
 	if (!time && !stones) {
@@ -211,9 +212,9 @@ void TimeControl::adjust_time(int color, int time, int stones) {
 void TimeControl::set_boardsize(int boardsize) {
 	// Note this is constant as we play, so it's fair
 	// to underestimate quite a bit.
-	m_moves_expected = (boardsize * boardsize) / 5;
+	m_moves_expected = (boardsize * boardsize) * 15;
 }
 
-int TimeControl::get_remaining_time(int color) {
+int TimeControl::get_remaining_time(Player color) {
 	return m_remaining_time[color];
 }
