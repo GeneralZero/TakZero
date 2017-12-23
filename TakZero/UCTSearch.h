@@ -61,6 +61,10 @@ public:
 	void swap_root(int move_number);
     SearchResult play_simulation(Board & currstate, UCTNode * const node);
 
+	uint32_t white_win{0};
+	uint32_t black_win{ 0 };
+	uint32_t tie_win{ 0 };
+
 private:
     void dump_stats(Board & state, UCTNode & parent);
 	int get_best_move(Player turn);

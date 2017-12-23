@@ -1,6 +1,6 @@
 // TakZero.cpp : main project file.
 
-//#include "TestingBoard.h"
+#include "TestingBoard.h"
 #include "FakeNetwork.h"
 #include "Board.h"
 #include "config.h"
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_max_playouts", 5000000));
-	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_num_threads", 1));
+	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_num_threads", concurentThreadsSupported- 2));
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_lagbuffer_cs", 10));
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_random_cnt", 30));
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_rng_seed",562312454));
@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
 	TestMoveGeneration1();
 	TestMoveGeneration2();
 	*/
-	
 	
 	//Setup the Connection back to Tensorflow
 	FakeNetwork::initialize();

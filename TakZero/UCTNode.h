@@ -12,7 +12,7 @@ public:
     // When we visit a node, add this amount of virtual losses
     // to it to encourage other CPUs to explore other parts of the
     // search tree.
-    static constexpr auto VIRTUAL_LOSS_COUNT = 0;
+    static constexpr auto VIRTUAL_LOSS_COUNT = 3;
 
     explicit UCTNode(int vertex, float score, float prev_win_rate);
     ~UCTNode();
@@ -44,6 +44,9 @@ public:
 
 	std::vector<UCTNode*> possoble_moves;
 
+	float m_curent_score;
+	float get_cur_score() const;
+	void set_cur_score(float score);
 private:
     UCTNode();
 
@@ -56,6 +59,7 @@ private:
     std::atomic<uint64_t> m_visits{0};
     std::atomic<uint64_t> m_virtual_loss{0};
     // UCT eval
+
     float m_score;
     float m_prev_win_rate;
     std::atomic<double> m_black_win{0};

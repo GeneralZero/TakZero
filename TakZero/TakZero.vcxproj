@@ -236,6 +236,7 @@
     <ClInclude Include="MD5.h" />
     <ClInclude Include="mutex.h" />
     <ClInclude Include="Random.h" />
+    <ClInclude Include="TestingBoard.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="TimeControl.h" />
     <ClInclude Include="Timing.h" />
@@ -257,6 +258,7 @@
     <ClCompile Include="mutex.cpp" />
     <ClCompile Include="Random.cpp" />
     <ClCompile Include="TakZero.cpp" />
+    <ClCompile Include="TestingBoard.cpp" />
     <ClCompile Include="TimeControl.cpp" />
     <ClCompile Include="Timing.cpp" />
     <ClCompile Include="Training.cpp" />

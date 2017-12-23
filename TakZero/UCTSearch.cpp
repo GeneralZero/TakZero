@@ -46,7 +46,7 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 	}
 	auto hash = currstate.get_hash();
 
-	//TTable::get_TT()->sync(hash, node);
+	TTable::get_TT()->sync(hash, node);
 
     auto result = SearchResult{};
 
@@ -56,12 +56,15 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
     if (!node->has_children()) {
 		//Check if Game has ended
 		if (currstate.black_win && currstate.white_win) {
+			this->tie_win++;
 			result = SearchResult::from_score(3.0);
 		}
 		else if (currstate.black_win) {
+			this->black_win++;
 			result = SearchResult::from_score((float)Black);
 		}
 		else if (currstate.white_win) {
+			this->white_win++;
 			result = SearchResult::from_score((float)White);
 		}
 		else if (m_nodes < MAX_TREE_SIZE) {
@@ -85,6 +88,7 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 		//Select part of Monte Carlo
         auto next = node->uct_select_child(turn);
 
+
         if (next != nullptr) {
             move = next->get_move();
 
@@ -98,7 +102,7 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
         node->update(result.eval());
     }
     node->virtual_loss_undo();
-	//TTable::get_TT()->update(hash, node);
+	TTable::get_TT()->update(hash, node);
 
     return result;
 }
@@ -307,7 +311,7 @@ int UCTSearch::think(Player turn, Training training) {
             dump_analysis(static_cast<int>(m_playouts));
         }
         keeprunning  = is_running();
-        keeprunning &= (centiseconds_elapsed < time_for_move);
+        keeprunning &= (centiseconds_elapsed < time_for_move +5);
         keeprunning &= !playout_limit_reached();
     } while(keeprunning);
 

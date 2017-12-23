@@ -24,6 +24,10 @@ Netresult FakeNetwork::get_scored_moves_internal(
 
 	std::vector<Play> moves = state->getAllPlays();
 
+	//if (moves.size() < 20) {
+	//	state->print_board();
+	//}
+
 	std::random_shuffle(moves.begin(), moves.end());
 
 	float black_winrate = 0.0;
