@@ -2,6 +2,7 @@
 
 #include <array>
 #include "Timing.h"
+#include "Move.h"
 
 class TimeControl {
 public:
@@ -13,14 +14,14 @@ public:
 		int byotime = 0, int byostones = 25,
 		int byoperiods = 0);
 
-	void start(int color);
-	void stop(int color);
-	int max_time_for_move(int color);
-	void adjust_time(int color, int time, int stones);
 	void set_boardsize(int boardsize);
+	int get_remaining_time(Player color);
 	void display_times();
-	int get_remaining_time(int color);
+	int max_time_for_move(Player color);
+	void adjust_time(Player color, int time, int stones);
 	void reset_clocks();
+	void start(Player color);
+	void stop(Player color);
 
 private:
 	int m_maintime;

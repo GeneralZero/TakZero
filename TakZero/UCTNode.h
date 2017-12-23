@@ -1,7 +1,9 @@
-#include <mutex>
+#pragma once
 
 #include "config.h"
+#include "mutex.h"
 #include "Board.h"
+#include "FakeNetwork.h"
 
 class UCTNode {
 public:
@@ -16,58 +18,47 @@ public:
     ~UCTNode();
     bool first_visit() const;
     bool has_children() const;
+	void set_visits(uint64_t visits);
     bool create_children(std::atomic<int> & nodecount,
                          Board & state, float & eval);
+	int add_move_nodes(std::vector<scored_node> nodelist, float win_rate);
     float eval_state(Board& state);
-    void delete_child(UCTNode * child);
-    void invalidate();
-    bool valid() const;
     int get_move() const;
     int get_visits() const;
     float get_score() const;
+	float get_prev_score() const;
     void set_score(float score);
     float get_eval(bool white_turn) const;
-    double get_blackevals() const;
-    void set_visits(int visits);
-    void set_blackevals(double blacevals);
-    void set_eval(float eval);
-    void accumulate_eval(float eval);
+	double get_black_wins() const;
     void virtual_loss(void);
     void virtual_loss_undo(void);
     void dirichlet_noise(float epsilon, float alpha);
-    void randomize_first_proportionally();
     void update(float eval = std::numeric_limits<float>::quiet_NaN());
-
-    UCTNode* uct_select_child(int color);
-    UCTNode* get_first_child() const;
-    UCTNode* get_sibling() const;
-
-    void sort_root_children(int color);
+	double get_percent_black_wins() const;
+	void set_black_wins(double black_wins);
+	void accumulate_eval(double win);
+	UCTNode* uct_select_child(int color);
+	void sort_moves(bool white_turn);
     UCTNode* get_best_root_child(bool turn_white);
-    std::mutex & get_mutex();
+	SMP::Mutex& UCTNode::get_mutex();
+
+	std::vector<UCTNode*> possoble_moves;
 
 private:
     UCTNode();
-    void link_child(UCTNode * newchild);
-    void link_nodelist(std::atomic<int> & nodecount,
-                       std::vector<Network::scored_node> & nodelist,
-                       float prev_win_rate);
 
     // Tree data
     std::atomic<bool> m_has_children{false};
-    UCTNode* m_firstchild{nullptr};
-    UCTNode* m_nextsibling{nullptr};
+    
     // Move
     int m_move;
     // UCT
-    std::atomic<int> m_visits{0};
-    std::atomic<int> m_virtual_loss{0};
+    std::atomic<uint64_t> m_visits{0};
+    std::atomic<uint64_t> m_virtual_loss{0};
     // UCT eval
     float m_score;
     float m_prev_win_rate;
-    std::atomic<double> m_black_win_rate{0};
-    // node alive (not superko)
-    std::atomic<bool> m_valid{true};
+    std::atomic<double> m_black_win{0};
     // Is someone adding scores to this node?
     // We don't need to unset this.
     bool m_is_expanding{false};
