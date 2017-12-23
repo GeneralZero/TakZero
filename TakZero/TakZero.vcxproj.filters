@@ -63,6 +63,9 @@
     <ClInclude Include="MD5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="hdf_wrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc">

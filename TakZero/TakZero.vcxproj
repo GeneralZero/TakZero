@@ -141,7 +141,7 @@
       <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;libcurl.lib;szip.lib;zlib.lib;hdf5.lib;hdf5_cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>szip.lib;zlib.lib;hdf5.lib;hdf5_cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -198,7 +198,7 @@
       <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;libcurl.lib;szip.lib;zlib.lib;hdf5.lib;hdf5_cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>szip.lib;zlib.lib;hdf5.lib;hdf5_cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -232,6 +232,7 @@
     <ClInclude Include="Board.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="FakeNetwork.h" />
+    <ClInclude Include="hdf_wrapper.h" />
     <ClInclude Include="MD5.h" />
     <ClInclude Include="mutex.h" />
     <ClInclude Include="Random.h" />

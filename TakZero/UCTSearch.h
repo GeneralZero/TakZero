@@ -14,52 +14,31 @@ public:
     SearchResult() = default;
     bool valid() const { return m_valid;  }
     float eval() const { return m_eval;  }
-	bool delete_node() const { return m_delete_me; }
-	void was_deleted() { m_delete_me = false; }
 
     static SearchResult from_eval(float eval) {
         return SearchResult(eval);
     }
-    static SearchResult from_score(float board_score, bool delete_me) {
+    static SearchResult from_score(float board_score) {
         if (board_score == (float)Black) {
-            return SearchResult((float)Black, delete_me, true);
+            return SearchResult((float)Black, true);
         } else if (board_score == (float)White) {
-            return SearchResult((float)White, delete_me, true);
+            return SearchResult((float)White, true);
 		}
 		else if (board_score == 3.0) {
-			return SearchResult(0.5f, delete_me, true);
+			return SearchResult(0.5f, true);
 		}
 		else{
-            return SearchResult(board_score, delete_me, true);
+            return SearchResult(board_score, false);
         }
     }
 	
 private:
-	explicit SearchResult(float eval, bool delete_me)
-		: m_valid(false), m_eval(eval), m_delete_me(delete_me) {
-		if (eval == (float)Black)
-			m_valid = true;
-		else if (eval == (float)White) {
-			m_valid = true;
-		}
-	}
     explicit SearchResult(float eval)
-        : m_valid(false), m_delete_me(false), m_eval(eval) {
-		if (eval == (float)Black)
-			m_valid = true;
-		else if (eval == (float)White) {
-			m_valid = true;
-		}
+        : m_valid(false), m_eval(eval) {
 	}
-	explicit SearchResult(float eval, bool delete_me, bool valid)
-		: m_valid(valid), m_eval(eval), m_delete_me(delete_me) {
-		if (eval == (float)Black)
-			m_valid = valid;
-		else if (eval == (float)White) {
-			m_valid = valid;
-		}
+	explicit SearchResult(float eval, bool valid)
+		: m_valid(valid), m_eval(eval) {
 	}
-	bool m_delete_me{ false };
     bool m_valid{false};
     float m_eval{0.0f};
 };
@@ -84,8 +63,8 @@ public:
 
 private:
     void dump_stats(Board & state, UCTNode & parent);
+	int get_best_move(Player turn);
     void dump_analysis(int playouts);
-    int get_best_move();
 
 	std::string get_pv(Board & state, UCTNode & parent, uint8_t depth);
 
@@ -95,7 +74,6 @@ private:
     std::atomic<int> m_playouts{0};
     std::atomic<bool> m_run{false};
     int m_maxplayouts;
-	Player turn;
 };
 
 class UCTWorker {

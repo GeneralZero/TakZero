@@ -5,6 +5,13 @@
 #include "Board.h"
 #include "UCTNode.h"
 #include "FakeNetwork.h"
+#include <iostream>
+#include <cstdint>
+#include <cstring>
+
+#include "highfive/H5DataSet.hpp"
+#include "highfive/H5DataSpace.hpp"
+#include "highfive/H5File.hpp"
 
 class TimeStep {
 public:
@@ -18,16 +25,15 @@ public:
 	void record(Board & state, UCTNode & root);
 
 	void dump_game();
+	static std::vector<TimeStep> m_data;
 private:
 	//Rotate Board
 	int get_new_index(uint8_t index, uint8_t transformation);
 	FastBoard rotateBoard(FastBoard board, uint8_t transformation);
 	TimeStep transformTimeStep(TimeStep input, uint8_t transformation);
-	void save_game(std::string foldername, std::string file_name);
+	int save_game(std::string foldername, std::string file_name);
 
 	int uploadGame(std::string foldername, std::string filename);
-	
-	static std::vector<TimeStep> m_data;
 
 	//Rotate Board
 	Board rotate_Board{5};
