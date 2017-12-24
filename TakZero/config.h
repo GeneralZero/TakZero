@@ -1,6 +1,9 @@
 #pragma once
 #include <map>
 
+#define TakZero_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
+#define TakZero_VERSION_MINOR @Tutorial_VERSION_MINOR@
+
 class ConfigStore
 {
 public:

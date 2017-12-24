@@ -1,10 +1,11 @@
-#include "board.h"
+#include "Board.h"
 #include "Zobrist.h"
 
 #include <algorithm>
 #include <queue>
 #include <iostream>
 #include <iterator>
+#include <math.h>
 #include <string>
 #include <sstream>
 #include <iterator>
@@ -47,7 +48,7 @@ Board::~Board()
 {
 	//Clean up prev_boards
 	/*
-	for each (auto prev in this->prev_boards)
+	for (auto prev : this->prev_boards)
 	{
 		for (uint8_t i = 0; i < (this->SIZE * this->SIZE); i++)
 		{
@@ -61,9 +62,9 @@ Board::~Board()
 
 void Board::SaveFastBoard() {
 	auto new_board = std::array< uint8_t, 5 * 5 * 32>{0};
-	for (uint8_t i = 0; i < this->SIZE * this->SIZE; i++)
+	for (size_t i = 0; i < this->SIZE * this->SIZE; i++)
 	{
-		uint8_t j = 0;
+		size_t j = 0;
 		uint8_t to_put = 0;
 
 		for (; j < this->board[i].size(); j++)
@@ -88,12 +89,12 @@ void Board::SaveFastBoard() {
 }
 
 std::array<FastBoard, 8> Board::getMLData() {
-	auto start = this->prev_boards.size() - 1;
-	auto end = start - 5;
+	size_t start = this->prev_boards.size() - 1;
+	size_t end = start - 5;
 
 	auto ret = std::array<FastBoard, 8>{};
-	int j = 0;
-	for (int i = start; i > end; ) {
+	size_t j = 0;
+	for (size_t i = start; i > end; ) {
 		ret[j] = this->prev_boards[i];
 		i--;
 		j++;
@@ -117,7 +118,7 @@ void Board::PlayMove(Play move)
 	uint16_t count = 0;
 	std::vector<Location> to_check;
 
-	for each (auto var in move.order)
+	for (auto var : move.order)
 	{
 		count += var;
 	}
@@ -463,7 +464,7 @@ void Board::WinnerPlace(PieceType piece, Location location)
 				if ((this->white_turn && ((cell->back() & Black) == White)) || \
 					(!this->white_turn && ((cell->back() & Black) == Black))) {
 
-					Location new_location_left{ current_location.x - 1, current_location.y };
+					Location new_location_left{ (uint8_t)(current_location.x - 1), (uint8_t)(current_location.y) };
 
 					auto found = std::find_if(visited.begin(), visited.end(), [new_location_left](const Location& d) {
 						return ((d.x == new_location_left.x) && (d.y == new_location_left.y));
@@ -474,7 +475,7 @@ void Board::WinnerPlace(PieceType piece, Location location)
 						visited.push_back(new_location_left);
 					}
 
-					Location new_location_up{ current_location.x, current_location.y - 1 };
+					Location new_location_up{ (uint8_t)(current_location.x), (uint8_t)(current_location.y - 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_up](const Location& d) {
 						return ((d.x == new_location_up.x) && (d.y == new_location_up.y));
@@ -485,7 +486,7 @@ void Board::WinnerPlace(PieceType piece, Location location)
 						visited.push_back(new_location_up);
 					}
 
-					Location new_location_right{ current_location.x + 1, current_location.y };
+					Location new_location_right{ (uint8_t)(current_location.x + 1), (uint8_t)(current_location.y) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_right](const Location& d) {
 						return ((d.x == new_location_right.x) && (d.y == new_location_right.y));
@@ -496,7 +497,7 @@ void Board::WinnerPlace(PieceType piece, Location location)
 						visited.push_back(new_location_right);
 					}
 
-					Location new_location_down{ current_location.x, current_location.y + 1 };
+					Location new_location_down{ (uint8_t)(current_location.x), (uint8_t)(current_location.y + 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_down](const Location& d) {
 						return ((d.x == new_location_down.x) && (d.y == new_location_down.y));
@@ -532,11 +533,7 @@ void Board::WinnerPlace(PieceType piece, Location location)
 
 void Board::WinnerMove(std::vector<Location> locations)
 {
-	bool white_turn = true;
-	//Cannot win on placing a standing stone
-
-	
-	for each (Location location in locations)
+	for (Location location : locations)
 	{
 		uint8_t min_x = location.x;
 		uint8_t min_y = location.y;
@@ -562,7 +559,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 			if (cell->size() != 0 && ((cell->back() & Capstone) != Standing)) {
 				if ((cell->back() & Black) == White) {
 
-					Location new_location_left{ current_location.x - 1, current_location.y };
+					Location new_location_left{ (uint8_t)(current_location.x - 1), (uint8_t)(current_location.y) };
 
 					auto found = std::find_if(visited.begin(), visited.end(), [new_location_left](const Location& d) {
 						return ((d.x == new_location_left.x) && (d.y == new_location_left.y));
@@ -573,7 +570,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_left);
 					}
 
-					Location new_location_up{ current_location.x, current_location.y - 1 };
+					Location new_location_up{ (uint8_t)(current_location.x), (uint8_t)(current_location.y - 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_up](const Location& d) {
 						return ((d.x == new_location_up.x) && (d.y == new_location_up.y));
@@ -584,7 +581,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_up);
 					}
 
-					Location new_location_right{ current_location.x + 1, current_location.y };
+					Location new_location_right{ (uint8_t)(current_location.x + 1), (uint8_t)(current_location.y) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_right](const Location& d) {
 						return ((d.x == new_location_right.x) && (d.y == new_location_right.y));
@@ -595,7 +592,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_right);
 					}
 
-					Location new_location_down{ current_location.x, current_location.y + 1 };
+					Location new_location_down{ (uint8_t)(current_location.x), (uint8_t)(current_location.y + 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_down](const Location& d) {
 						return ((d.x == new_location_down.x) && (d.y == new_location_down.y));
@@ -626,7 +623,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 	white_turn = false;
 
 	
-	for each (Location location in locations)
+	for (Location location : locations)
 	{
 		
 		uint8_t min_x = location.x;
@@ -654,7 +651,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 			if (cell->size() != 0 && ((cell->back() & Capstone) != Standing)) {
 				if ((cell->back() & Black) == Black) {
 
-					Location new_location_left{ current_location.x - 1, current_location.y };
+					Location new_location_left{ (uint8_t)(current_location.x - 1), (uint8_t)(current_location.y) };
 
 					auto found = std::find_if(visited.begin(), visited.end(), [new_location_left](const Location& d) {
 						return ((d.x == new_location_left.x) && (d.y == new_location_left.y));
@@ -665,7 +662,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_left);
 					}
 
-					Location new_location_up{ current_location.x, current_location.y - 1 };
+					Location new_location_up{ (uint8_t)(current_location.x), (uint8_t)(current_location.y - 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_up](const Location& d) {
 						return ((d.x == new_location_up.x) && (d.y == new_location_up.y));
@@ -676,7 +673,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_up);
 					}
 
-					Location new_location_right{ current_location.x + 1, current_location.y };
+					Location new_location_right{ (uint8_t)(current_location.x + 1), (uint8_t)(current_location.y) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_right](const Location& d) {
 						return ((d.x == new_location_right.x) && (d.y == new_location_right.y));
@@ -687,7 +684,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 						visited.push_back(new_location_right);
 					}
 
-					Location new_location_down{ current_location.x, current_location.y + 1 };
+					Location new_location_down{ (uint8_t)(current_location.x), (uint8_t)(current_location.y + 1) };
 
 					found = std::find_if(visited.begin(), visited.end(), [new_location_down](const Location& d) {
 						return ((d.x == new_location_down.x) && (d.y == new_location_down.y));
@@ -721,7 +718,7 @@ void Board::WinnerMove(std::vector<Location> locations)
 void Board::PrintMove(Play move)
 {
 	if (move.type == Placement) {
-		printf("Play Placement: location=(%d,%d), Piece=[]", move.location.x, move.location.y, move.piece );
+		printf("Play Placement: location=(%d,%d), Piece=[%d]", move.location.x, move.location.y, move.piece);
 	}
 	else {
 		std::ostringstream oss;
@@ -733,7 +730,7 @@ void Board::PrintMove(Play move)
 			// Now add the last element with no delimiter
 			oss << move.order.back();
 		}
-		printf("Play Move     : start=(%d,%d), end=(%d,%d), order=[] ", move.start.x, move.start.y, move.end.x, move.end.y, oss.str());
+		printf("Play Move     : start=(%d,%d), end=(%d,%d), order=[%s] ", move.start.x, move.start.y, move.end.x, move.end.y, oss.str().c_str());
 	}
 	
 }
@@ -747,18 +744,17 @@ bool Board::ValidMove(int index)
 		move.type = Placement;
 		uint16_t offset = index - 1500;
 
-		uint8_t i = floorl(offset / 3);
+		uint8_t i = std::floor(offset / 3);
 		move.location.x = i % this->SIZE;
-		move.location.y = (uint8_t)floorl(i / this->SIZE);
+		move.location.y = (uint8_t)std::floor(i / this->SIZE);
 		move.piece = (PieceType)(offset - (i * 3));
 	}
 	else {
 		move.type = MoveStack;
-		uint16_t i = floorl(index / 60);
-		uint16_t move_num = (index % 60);
+		uint16_t i = std::floor(index / 60);
 
 		move.start.x = i % this->SIZE;
-		move.start.y = (uint8_t)floorl(i / this->SIZE);
+		move.start.y = (uint8_t)std::floor(i / this->SIZE);
 	}
 
 	if (move.type == Placement) {
@@ -829,7 +825,7 @@ uint16_t Board::GetMoveIndex(Play move) {
 	uint8_t moves_up    = this->distance_table[move.start.y];
 	uint8_t moves_right = this->distance_table[this->SIZE - 1 - move.start.x];
 	uint8_t moves_down  = this->distance_table[this->SIZE - 1 - move.start.y];
-	uint8_t moves_left  = this->distance_table[move.start.x];
+	//uint8_t moves_left  = this->distance_table[move.start.x];
 
 	auto move_arrays = GenerateMoveArrays(move.start.y, this->SIZE, false);
 
@@ -1005,7 +1001,7 @@ uint64_t Board::get_hash()
 	auto res = uint64_t{ 0x1234567887654321ULL };
 
 	//Get Hash from board
-	for (int i = 0; i < this->board.size(); i++) {
+	for (uint i = 0; i < this->board.size(); i++) {
 		for (size_t j = 0; j < this->board[i].size(); j++)
 		{
 			res ^= Zobrist::zobrist[this->board[i][j]][(i*64) + j];
@@ -1033,7 +1029,7 @@ std::vector<Play> Board::getAllPlays()
 				temp.type = Placement;
 				temp.piece = Flat;
 				temp.location.x = i % this->SIZE;
-				temp.location.y = floorl(i / this->SIZE);
+				temp.location.y = std::floor(i / this->SIZE);
 				temp.index = GetPlacementIndex(temp);
 				ret.push_back(temp);
 			}
@@ -1070,11 +1066,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						auto move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(floorl(i / this->SIZE) + move.size()) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(std::floor(i / this->SIZE) + move.size()) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1100,11 +1096,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ (uint8_t)(i % this->SIZE) , static_cast<uint8_t>((uint8_t)(floorl(i / this->SIZE) - move.size())) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ (uint8_t)(i % this->SIZE) , static_cast<uint8_t>((uint8_t)(std::floor(i / this->SIZE) - move.size())) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1129,11 +1125,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) - move.size()) , (uint8_t)(floorl(i / this->SIZE)) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) - move.size()) , (uint8_t)(std::floor(i / this->SIZE)) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1143,7 +1139,7 @@ std::vector<Play> Board::getAllPlays()
 						distance = 0;
 						s_distance = 0;
 						//Right
-						for (size_t j = (i + 1); j < (i - (i % this->SIZE) + this->SIZE); j++)
+						for (int j = (i + 1); j < (i - (i % this->SIZE) + this->SIZE); j++)
 						{
 							if (this->board[j].size() == 0 || ((this->board[j].back() & Standing) != Standing)) {
 								distance++;
@@ -1158,11 +1154,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) + (uint8_t)move.size()) , (uint8_t)(floorl(i / this->SIZE)) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) + (uint8_t)move.size()) , (uint8_t)(std::floor(i / this->SIZE)) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1181,7 +1177,7 @@ std::vector<Play> Board::getAllPlays()
 						to_move = std::min(this->SIZE, to_move);
 
 						//Down
-						for (size_t j = (i + this->SIZE); j < this->SIZE * this->SIZE; j += this->SIZE)
+						for (int j = (i + this->SIZE); j < this->SIZE * this->SIZE; j += this->SIZE)
 						{
 							if (this->board[j].size() == 0 || ((this->board[j].back() & Standing) != Standing)) {
 								distance++;
@@ -1196,11 +1192,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						auto move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(floorl(i / this->SIZE) + move.size()) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(std::floor(i / this->SIZE) + move.size()) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1226,11 +1222,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(floorl(i / this->SIZE) - move.size()) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ (uint8_t)(i % this->SIZE) , (uint8_t)(std::floor(i / this->SIZE) - move.size()) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1255,11 +1251,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) - (uint8_t)move.size() ), (uint8_t)(floorl(i / this->SIZE)) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) - (uint8_t)move.size() ), (uint8_t)(std::floor(i / this->SIZE)) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1269,7 +1265,7 @@ std::vector<Play> Board::getAllPlays()
 						distance = 0;
 						s_distance = 0;
 						//Right
-						for (size_t j = (i + 1); j < (i - (i % this->SIZE) + this->SIZE); j++)
+						for (int j = (i + 1); j < (i - (i % this->SIZE) + this->SIZE); j++)
 						{
 							if (this->board[j].size() == 0 || ((this->board[j].back() & Standing) != Standing)) {
 								distance++;
@@ -1284,11 +1280,11 @@ std::vector<Play> Board::getAllPlays()
 						}
 
 						move_arrays = GenerateMoveArrays(distance, to_move, (cap & s_distance));
-						for each(auto move in move_arrays) {
+						for (auto move : move_arrays) {
 							Play temp;
 							temp.type = MoveStack;
-							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)floorl(i / this->SIZE) };
-							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) + (uint8_t)move.size()) , (uint8_t)(floorl(i / this->SIZE)) };
+							temp.start = Location{ (uint8_t)(i % this->SIZE), (uint8_t)std::floor(i / this->SIZE) };
+							temp.end = Location{ static_cast<uint8_t>((uint8_t)(i % this->SIZE) + (uint8_t)move.size()) , (uint8_t)(std::floor(i / this->SIZE)) };
 							temp.order = move;
 							temp.index = this->GetMoveIndex(temp);
 
@@ -1306,7 +1302,7 @@ std::vector<Play> Board::getAllPlays()
 				temp.type = Placement;
 				temp.piece = Flat;
 				temp.location.x = i % this->SIZE;
-				temp.location.y = floorl(i / this->SIZE);
+				temp.location.y = std::floor(i / this->SIZE);
 				temp.index = GetPlacementIndex(temp);
 
 				temp1.type = Placement;
@@ -1348,9 +1344,9 @@ Play Board::GetMoveFromIndex(uint16_t move)
 		ret.index = move;
 		uint16_t offset = move - 1500;
 
-		uint8_t i = floorl(offset / 3);
+		uint8_t i = std::floor(offset / 3);
 		ret.location.x = i % this->SIZE;
-		ret.location.y = (uint8_t)floorl(i / this->SIZE);
+		ret.location.y = (uint8_t)std::floor(i / this->SIZE);
 		uint8_t p = (offset % 3);
 		switch (p) {
 		case 0:
@@ -1367,17 +1363,17 @@ Play Board::GetMoveFromIndex(uint16_t move)
 	else {
 		ret.type = MoveStack;
 		ret.index = move;
-		uint16_t i = floorl(move / 60);
+		uint16_t i = std::floor(move / 60);
 		uint16_t move_num = (move % 60);
 
 		ret.start.x = i % this->SIZE;
-		ret.start.y = (uint8_t)floorl(i / this->SIZE);
+		ret.start.y = (uint8_t)std::floor(i / this->SIZE);
 
 		//End
 		uint8_t moves_up = this->distance_table[ret.start.y];
 		uint8_t moves_right = this->distance_table[this->SIZE - 1 - ret.start.x];
 		uint8_t moves_down = this->distance_table[this->SIZE - 1 - ret.start.y];
-		uint8_t moves_left = this->distance_table[ret.start.x];
+		//uint8_t moves_left = this->distance_table[ret.start.x];
 
 		//Move array
 		if (move_num < moves_up) {

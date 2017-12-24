@@ -15,10 +15,10 @@
 
 #ifdef _DEBUG
 #undef _DEBUG
-#include <python.h>
+//#include <python.h>
 #define _DEBUG
 #else
-#include <python.h>
+//#include <python.h>
 #endif
 
 extern Utils::ThreadPool thread_pool;
@@ -64,17 +64,17 @@ int main(int argc, char *argv[])
 	for (size_t i = 0; i < 50000; i++)
 	{
 		//Create Game 
-		Board & maingame = Board(5);
+		Board* maingame = new Board(5);
 		Training training = Training(); 
-		auto search = std::make_unique<UCTSearch>(maingame);
+		auto search = std::make_unique<UCTSearch>(*maingame);
 
 		//Get new Prob from DeepLearning (Threaded it takes a while)
-		auto ml_data = maingame.getMLData();
+		auto ml_data = maingame->getMLData();
 
-		while (!maingame.black_win && !maingame.white_win) {
+		while (!maingame->black_win && !maingame->white_win) {
 
 			uint16_t move;
-			bool white_turn = maingame.white_turn;
+			bool white_turn = maingame->white_turn;
 
 			//Wait for ML thread
 
@@ -92,33 +92,33 @@ int main(int argc, char *argv[])
 			//Save Probs to disk (Threaded)
 
 
-			maingame.white_turn = white_turn;
+			maingame->white_turn = white_turn;
 			//Print Move
-			Play play_move = maingame.GetMoveFromIndex(move);
+			Play play_move = maingame->GetMoveFromIndex(move);
 
 			//Play move
-			maingame.PlayIndex(move);
+			maingame->PlayIndex(move);
 
 			//Print Board 
-			//maingame.print_board();
+			//maingame->print_board();
 
 			//Save Fastboard
-			maingame.SaveFastBoard();
+			maingame->SaveFastBoard();
 
 			//Wait for Node update thread
 			//training.dump_game();
 		}
-		if (maingame.white_win && maingame.black_win) {
-			maingame.print_board();
+		if (maingame->white_win && maingame->black_win) {
+			maingame->print_board();
 			std::cout << "Tie" << std::endl;
 		}
-		else if (maingame.white_win) {
-			maingame.print_board();
+		else if (maingame->white_win) {
+			maingame->print_board();
 			std::cout << "White Win" << std::endl;
 			white_win++;
 		}
 		else {
-			maingame.print_board();
+			maingame->print_board();
 			std::cout << "Black Win" << std::endl;
 			black_win++;
 		}

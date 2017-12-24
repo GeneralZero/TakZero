@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <math.h>
+#include <random>
+#include <algorithm>
 
 #include "FakeNetwork.h"
 #include "Utility.h"
@@ -24,17 +26,15 @@ Netresult FakeNetwork::get_scored_moves_internal(
 
 	std::vector<Play> moves = state->getAllPlays();
 
-	//if (moves.size() < 20) {
-	//	state->print_board();
-	//}
+	std::default_random_engine generator(std::random_device{}());
 
-	std::random_shuffle(moves.begin(), moves.end());
+	std::shuffle(moves.begin(), moves.end(), generator);
 
 	float black_winrate = 0.0;
 
 	float winrate_sig = (1.0f + std::tanh(black_winrate)) / 2.0f;
 
-	for each (Play move in moves)
+	for (Play move : moves)
 	{
 		result.emplace_back(1/(double)moves.size(), move.index);
 	}

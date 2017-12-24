@@ -5,6 +5,8 @@
 #include "Board.h"
 #include "FakeNetwork.h"
 
+#include <limits>
+
 class UCTNode {
 public:
     using sortnode_t = std::tuple<float, int, float, UCTNode*>;
@@ -40,7 +42,7 @@ public:
 	UCTNode * uct_select_child(Player turn);
 	void sort_moves(Player turn);
     UCTNode* get_best_root_child(Player turn);
-	SMP::Mutex& UCTNode::get_mutex();
+	SMP::Mutex& get_mutex();
 
 	std::vector<UCTNode*> possoble_moves;
 

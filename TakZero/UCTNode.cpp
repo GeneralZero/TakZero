@@ -116,7 +116,6 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
 
     auto legal_sum = 0.0f;
     for (auto& node : raw_netlist.first) {
-        auto move_index = node.second;
         nodelist.emplace_back(node);
         legal_sum += node.first;
     }
@@ -202,7 +201,7 @@ void UCTNode::dirichlet_noise(float epsilon, float alpha) {
     }
 
 	//Randomize the noise to the nodes
-	std::random_shuffle(dirichlet_vector.begin(), dirichlet_vector.end());
+	std::shuffle(dirichlet_vector.begin(), dirichlet_vector.end(), generator);
 
 	for (size_t i = 0; i < this->possoble_moves.size(); i++){
 		auto score = this->possoble_moves[i]->get_score();

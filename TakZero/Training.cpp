@@ -1,7 +1,12 @@
 #include "Training.h"
 #include "FakeNetwork.h"
 #include <experimental/filesystem>
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
+#else
+
+#endif
+
 
 #include "MD5.h"
 #include <iostream>
@@ -54,7 +59,7 @@ void Training::dump_game()
 
 	//Create MD5 hash
 
-	auto data_md5 = MD5::MD5((char*)this->m_data.data(), this->m_data.size() * sizeof(TimeStep));
+	auto data_md5 = MD5((char*)this->m_data.data(), this->m_data.size() * sizeof(TimeStep));
 	std::string file_name = "Game_" + data_md5.hexdigest() + ".hdf5";
 
 	//Save Game
@@ -151,7 +156,7 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 {
 	TimeStep output;
 	//Transform Boards
-	int i = 0;
+	uint i = 0;
 	for (; i < input.planes.size() - 2; i++) {
 		output.planes[i] = rotateBoard(input.planes[i], transformation);
 	}
@@ -216,7 +221,7 @@ int Training::save_game(std::string foldername, std::string file_name)
 	std::experimental::filesystem::path myDirectory = foldername;
 	if (!std::experimental::filesystem::is_directory(foldername)) {
 		std::experimental::filesystem::create_directory(foldername);
-		_chdir(foldername.c_str());
+		//_chdir(foldername.c_str());
 	}
 
 	//std::string location = foldername + "\\" + file_name;

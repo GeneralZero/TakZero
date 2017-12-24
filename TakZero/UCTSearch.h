@@ -52,7 +52,7 @@ public:
     static constexpr auto MAX_TREE_SIZE = 30'000'000;
 	
     UCTSearch(Board & g);
-    void set_playout_limit(int playouts);
+    void set_playout_limit(uint playouts);
     void ponder();
     bool is_running() const;
     bool playout_limit_reached() const;
@@ -68,7 +68,7 @@ public:
 private:
     void dump_stats(Board & state, UCTNode & parent);
 	int get_best_move(Player turn);
-    void dump_analysis(int playouts);
+    void dump_analysis(uint playouts);
 
 	std::string get_pv(Board & state, UCTNode & parent, uint8_t depth);
 

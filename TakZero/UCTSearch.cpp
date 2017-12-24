@@ -82,7 +82,7 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 		}
     }
 	
-	int move;
+	uint move;
 
     if (node->has_children() && !result.valid()) {
 		//Select part of Monte Carlo
@@ -128,9 +128,9 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
         return;
     }
 
-    int movecount = 0;
+    uint movecount = 0;
 
-	for (int i = 0; i < 5 && i< parent.possoble_moves.size(); i++) {
+	for (uint i = 0; i < 5 && i< parent.possoble_moves.size(); i++) {
 		if (++movecount > 2 && !parent.possoble_moves[i]->get_visits()) break;
 
 		std::string tmp = std::to_string(parent.possoble_moves[i]->get_move());
@@ -206,7 +206,7 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent, uint8_t depth) {
     return res;
 }
 
-void UCTSearch::dump_analysis(int playouts) {
+void UCTSearch::dump_analysis(uint playouts) {
     if (ConfigStore::get().bools.at("cfg_quiet")) {
         return;
     }
@@ -258,7 +258,7 @@ int UCTSearch::think(Player turn, Training training) {
     Time start;
 
     m_rootstate.get_timecontrol().set_boardsize(m_rootstate.SIZE);
-    auto time_for_move = m_rootstate.get_timecontrol().max_time_for_move(turn);
+    uint time_for_move = m_rootstate.get_timecontrol().max_time_for_move(turn);
 
 	if (turn == White) {
 		Utils::myprintf("White Turn\n");
@@ -285,14 +285,14 @@ int UCTSearch::think(Player turn, Training training) {
 
 	//Rollout & back prop
     m_run = true;
-    int cpus = ConfigStore::get().ints.at("cfg_num_threads");
+    uint cpus = ConfigStore::get().ints.at("cfg_num_threads");
     Utils::ThreadGroup tg(thread_pool);
-    for (int i = 1; i < cpus; i++) {
+    for (uint i = 1; i < cpus; i++) {
         tg.add_task(UCTWorker(m_rootstate, this, m_root));
     }
 
     bool keeprunning = true;
-    int last_update = 0;
+    uint last_update = 0;
     do {
         auto currstate = std::make_unique<Board>(m_rootstate);
 
@@ -302,16 +302,16 @@ int UCTSearch::think(Player turn, Training training) {
         }
 
 		Time elapsed;
-        int centiseconds_elapsed = Time::timediff(start, elapsed);
+        uint centiseconds_elapsed = Time::timediff(start, elapsed);
 
         // output some stats every few seconds
         // check if we should still search
         if (centiseconds_elapsed - last_update > 250) {
             last_update = centiseconds_elapsed;
-            dump_analysis(static_cast<int>(m_playouts));
+            dump_analysis(static_cast<uint>(m_playouts));
         }
         keeprunning  = is_running();
-        keeprunning &= (centiseconds_elapsed < time_for_move +5);
+        keeprunning &= (centiseconds_elapsed < time_for_move);
         keeprunning &= !playout_limit_reached();
     } while(keeprunning);
 
@@ -327,12 +327,12 @@ int UCTSearch::think(Player turn, Training training) {
 	training.record(m_rootstate, *m_root);
 
     Time elapsed;
-    int centiseconds_elapsed = Time::timediff(start, elapsed);
+    uint centiseconds_elapsed = Time::timediff(start, elapsed);
     if (centiseconds_elapsed > 0) {
 		Utils::myprintf("%d visits, %d nodes, %d playouts, %d n/s\n\n",
                  m_root->get_visits(),
-                 static_cast<int>(m_nodes),
-                 static_cast<int>(m_playouts),
+                 static_cast<uint>(m_nodes),
+                 static_cast<uint>(m_playouts),
                  (m_playouts * 100) / (centiseconds_elapsed+1));
     }
     int bestmove = get_best_move(turn);
@@ -375,9 +375,9 @@ void UCTSearch::ponder() {
     assert(m_nodes == 0);
 
     m_run = true;
-    int cpus = ConfigStore::get().ints.at("cfg_num_threads") ;
+    uint cpus = ConfigStore::get().ints.at("cfg_num_threads") ;
     Utils::ThreadGroup tg(thread_pool);
-    for (int i = 1; i < cpus; i++) {
+    for (uint i = 1; i < cpus; i++) {
         tg.add_task(UCTWorker(m_rootstate, this, m_root));
     }
     do {
@@ -399,7 +399,7 @@ void UCTSearch::ponder() {
 	Utils::myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), (int)m_nodes);
 }
 
-void UCTSearch::set_playout_limit(int playouts) {
+void UCTSearch::set_playout_limit(uint playouts) {
     static_assert(std::is_convertible<decltype(playouts),
                                       decltype(m_maxplayouts)>::value,
                   "Inconsistent types for playout amount.");
