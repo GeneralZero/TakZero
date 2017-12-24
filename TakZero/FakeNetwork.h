@@ -21,8 +21,7 @@ typedef std::array<float, 1575> PlayProb;
 typedef std::array<FastBoard, 8> NNInput;
 typedef std::pair<PlayProb, float> NNOutput;
 
-typedef std::bitset<5 * 5 * 64 * 4> BoardPlane;
-typedef std::vector<BoardPlane> NNPlanes;
+typedef std::vector<FastBoard> NNPlanes;
 
 typedef float net_t;
 

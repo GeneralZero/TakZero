@@ -61,21 +61,18 @@ Board::~Board()
 }
 
 void Board::SaveFastBoard() {
-	auto new_board = std::array< uint8_t, 5 * 5 * 32>{0};
+	auto new_board = std::array< uint8_t, 5 * 5 * 32>{{0}};
 	for (size_t i = 0; i < this->SIZE * this->SIZE; i++)
 	{
 		size_t j = 0;
 		uint8_t to_put = 0;
+		uint32_t index = (i * 32);
 
 		for (; j < this->board[i].size(); j++)
 		{
-			uint32_t index = (i * j);
-			if (i % 2 == 0) {
+			index = (i * 32)+j;
+			if (j % 2 == 0) {
 				to_put = ((7 & this->board[i].at(j)) << 4);
-
-				if (this->board[i].size() == j+1) {
-					new_board.at(index) = to_put;
-				}
 			}
 			else {
 				to_put += ((7 & this->board[i].at(j)));
@@ -84,6 +81,7 @@ void Board::SaveFastBoard() {
 			}
 			
 		}
+		new_board.at(index) = to_put;
 	}
 	this->prev_boards.push_back(new_board);
 }
@@ -94,8 +92,12 @@ std::array<FastBoard, 8> Board::getMLData() {
 
 	auto ret = std::array<FastBoard, 8>{};
 	size_t j = 0;
-	for (size_t i = start; i > end; ) {
+	for (size_t i = start; i >= end; ) {
 		ret[j] = this->prev_boards[i];
+		if(i == 0){
+			j++;
+			break;
+		}
 		i--;
 		j++;
 	}
@@ -105,9 +107,9 @@ std::array<FastBoard, 8> Board::getMLData() {
 		ret[j].fill(1);
 	}
 	else {
-		ret[j].fill(0);
-		j++;
 		ret[j].fill(1);
+		j++;
+		ret[j].fill(0);
 	}
 	return ret;
 }

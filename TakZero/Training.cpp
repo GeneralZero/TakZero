@@ -7,7 +7,7 @@
 
 #endif
 
-
+#include <math.h>
 #include "MD5.h"
 #include <iostream>
 #include "H5Cpp.h"
@@ -17,7 +17,7 @@ std::vector<TimeStep> Training::m_data{};
 void Training::record(Board & state, UCTNode & root)
 {
 	auto step = TimeStep{};
-	step.planes = NNInput{};
+	step.planes = state.getMLData();
 
 	auto result =
 		FakeNetwork::get_scored_moves(&state);
@@ -26,7 +26,12 @@ void Training::record(Board & state, UCTNode & root)
 	// Get total visit amount. We count rather
 	// than trust the root to avoid ttable issues.
 	uint64_t sum_visits = 0;
-	for (size_t i = 0; i < root.possoble_moves.size(); i++)
+
+	auto a = root.possoble_moves.size();
+
+	std::fill(step.probabilities.begin(), step.probabilities.end(), -1.0);
+	
+	for (size_t i = 0; i < a; i++)
 	{
 		sum_visits += root.possoble_moves[i]->get_visits();
 	}
@@ -35,9 +40,9 @@ void Training::record(Board & state, UCTNode & root)
 		return;
 	}
 
-	for (size_t i = 0; i < root.possoble_moves.size(); i++) {
-		auto prob = static_cast<float>(root.possoble_moves[i]->get_visits() / sum_visits);
-		auto move = root.possoble_moves[i]->get_move();
+	for (size_t i = 0; i < a; i++) {
+		float prob = static_cast<float>((float)root.possoble_moves[i]->get_visits() / (float)sum_visits);
+		uint16_t move = root.possoble_moves[i]->get_move();
 		step.probabilities[move] = prob;
 	}
 
@@ -72,7 +77,7 @@ void Training::dump_game()
 int Training::get_new_index(uint8_t index, uint8_t transformation)
 {
 	int old_x = index % this->rotate_Board.SIZE;
-	int old_y = floorl(index / this->rotate_Board.SIZE);
+	int old_y = std::floor(index / this->rotate_Board.SIZE);
 	int new_x = old_x;
 	int new_y = old_y;
 	if (transformation == 0) {
@@ -85,7 +90,7 @@ int Training::get_new_index(uint8_t index, uint8_t transformation)
 		//Flip Vertical
 		new_x = this->rotate_Board.SIZE - old_x - 1;
 
-		return new_x + new_y * this->rotate_Board.SIZE;
+		return (new_x + new_y * this->rotate_Board.SIZE);
 	case 2:
 		//Flip Horozontal and Vertical
 		//Flip Vertical
@@ -176,7 +181,7 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 		if (input.probabilities[i] != -1.0) {
 			//Get move
 			Play move = this->rotate_Board.GetMoveFromIndex(i);
-			Play mover;
+			Play mover{move.type};
 
 			//Rotate Move
 			if (move.type == MoveStack) {
@@ -185,19 +190,19 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 
 				int index = get_new_index(move.start.x + move.start.y * this->rotate_Board.SIZE, transformation);
 				mover.start.x = index % this->rotate_Board.SIZE;
-				mover.start.y = floorl(index / this->rotate_Board.SIZE);
+				mover.start.y = std::floor(index / this->rotate_Board.SIZE);
 
 				index = get_new_index(move.end.x + move.end.y * this->rotate_Board.SIZE, transformation);
 				mover.end.x = index % this->rotate_Board.SIZE;
-				mover.end.y = floorl(index / this->rotate_Board.SIZE);
+				mover.end.y = std::floor(index / this->rotate_Board.SIZE);
 			}
 			else {
 				mover.type = Placement;
 				mover.piece = move.piece;
 				
-				int index = get_new_index(move.start.x + move.start.y * this->rotate_Board.SIZE, transformation);
+				int index = get_new_index(move.location.x + move.location.y * this->rotate_Board.SIZE, transformation);
 				mover.location.x = index % this->rotate_Board.SIZE;
-				mover.location.y = floorl(index / this->rotate_Board.SIZE);
+				mover.location.y = std::floor(index / this->rotate_Board.SIZE);
 			}
 
 			//Get new index
@@ -218,23 +223,25 @@ int Training::save_game(std::string foldername, std::string file_name)
 {
 	const size_t size = this->m_data.size();
 
-	std::experimental::filesystem::path myDirectory = foldername;
-	if (!std::experimental::filesystem::is_directory(foldername)) {
-		std::experimental::filesystem::create_directory(foldername);
-		//_chdir(foldername.c_str());
-	}
+	//std::experimental::filesystem::path myDirectory = foldername;
+	//if (!std::experimental::filesystem::is_directory(foldername)) {
+	//	std::experimental::filesystem::create_directory(foldername);
+	//	//_chdir(foldername.c_str());
+	//}
 
 	//std::string location = foldername + "\\" + file_name;
 	H5::H5File file(file_name.c_str(), H5F_ACC_TRUNC);
 
 	NNInput *planes = new NNInput[size];
-	PlayProb * probs = new PlayProb[size];
-	double *win_rates = new double[size];
+	PlayProb *probs = new PlayProb[size];
+	float *win_rates = new float[size];
 
 	for (size_t i = 0; i < size; i++)
 	{
-		std::memcpy(planes[i].data(), this->m_data[i].planes.data(), sizeof(NNInput));
-		std::memcpy(probs[i].data(), this->m_data[i].probabilities.data(), sizeof(PlayProb));
+		for(size_t j = 0; j < 8; j++){
+			std::memcpy(planes[i][j].data(), this->m_data[i].planes[j].data(),sizeof(uint8_t)* 5 * 5 * 32);
+		}
+		std::memcpy(probs[i].data(), this->m_data[i].probabilities.data(), sizeof(float) * 1575);
 		win_rates[i] = this->m_data[i].net_winrate;
 	}
 	//Planes input
@@ -262,15 +269,14 @@ int Training::save_game(std::string foldername, std::string file_name)
 	y_plist.setChunk(2, y_input);
 	y_plist.setDeflate(9);
 
-	H5::IntType y_datatype(H5::PredType::NATIVE_DOUBLE);
+	H5::IntType y_datatype(H5::PredType::NATIVE_FLOAT);
 	y_datatype.setOrder(H5T_ORDER_LE);
 
 	H5::DataSet y_dataset = file.createDataSet("y_input_1", y_datatype, y_dataspace, y_plist);
 
-	y_dataset.write(probs, H5::PredType::NATIVE_DOUBLE);
+	y_dataset.write(probs, H5::PredType::NATIVE_FLOAT);
 
 	//winrate output
-	//const uint16_t a = win_rates.size();
 	hsize_t     y_input_1[1] = { size };
 
 	H5::DataSpace y_dataspace_1(1, y_input_1);
@@ -279,12 +285,12 @@ int Training::save_game(std::string foldername, std::string file_name)
 	y_plist_1.setChunk(1, y_input_1);
 	y_plist_1.setDeflate(9);
 
-	H5::IntType y_datatype_1(H5::PredType::NATIVE_DOUBLE);
+	H5::IntType y_datatype_1(H5::PredType::NATIVE_FLOAT);
 	y_datatype_1.setOrder(H5T_ORDER_LE);
 
 	H5::DataSet y_dataset_1 = file.createDataSet("y_input_2", y_datatype_1, y_dataspace_1, y_plist_1);
 
-	y_dataset_1.write(win_rates, H5::PredType::NATIVE_DOUBLE);
+	y_dataset_1.write(win_rates, H5::PredType::NATIVE_FLOAT);
 
 	file.close();
 
