@@ -65,23 +65,32 @@ void Board::SaveFastBoard() {
 	for (size_t i = 0; i < this->SIZE * this->SIZE; i++)
 	{
 		size_t j = 0;
+		bool add_last = false;
 		uint8_t to_put = 0;
-		uint32_t index = (i * 32);
+		uint32_t start_index = (i * 32);
+		uint32_t end_index = start_index;
 
 		for (; j < this->board[i].size(); j++)
 		{
-			index = (i * 32)+j;
-			if (j % 2 == 0) {
+			end_index = (i * 32)+std::floor(j/2);
+			if (add_last == false) {
 				to_put = ((7 & this->board[i].at(j)) << 4);
+				add_last = true;
 			}
 			else {
 				to_put += ((7 & this->board[i].at(j)));
-				new_board.at(index) = to_put;
+				new_board.at(end_index) = to_put;
 				to_put = 0;
+				add_last = false;
 			}
 			
 		}
-		new_board.at(index) = to_put;
+		if(add_last){
+			new_board.at(end_index) = to_put;
+		}
+		
+		// Reverse cell top to begining.
+		std::reverse(new_board.begin() + start_index, new_board.begin() + end_index);
 	}
 	this->prev_boards.push_back(new_board);
 }
@@ -272,7 +281,37 @@ void Board::PlayMove(Play move)
 		throw std::invalid_argument("Invalid Move start and end.");
 	}
 
-	//Update_tops from to_check
+	//Check Endgame conditions
+	if (this->move_number >= this->SIZE*this->SIZE -1) {
+		uint8_t empty_cells = 0;
+		uint8_t white_top_count = 0;
+		uint8_t black_top_count = 0;
+		for (uint8_t i = 0; i < this->board.size(); i++)
+		{
+			if (this->board[i].size() == 0) {
+				empty_cells++;
+			}
+			else if ((this->board[i].back() & Black) == White && (this->board[i].back() & Capstone) != Standing) {
+				white_top_count++;
+			}
+			else if ((this->board[i].back() & Black) == Black && (this->board[i].back() & Capstone) != Standing) {
+				black_top_count++;
+			}
+		}
+
+		if (empty_cells == 0) {
+			if (white_top_count > black_top_count) {
+				this->white_win = true;
+			}
+			else if (white_top_count < black_top_count) {
+				this->black_win = true;
+			}
+			else {
+				this->white_win = true;
+				this->black_win = true;
+			}
+		}
+	}
 
 	//Update prevboards
 	//this->prev_boards.push_back(this->CreateFastBoard());

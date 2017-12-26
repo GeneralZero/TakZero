@@ -95,9 +95,11 @@ bool UCTNode::create_children(std::atomic<int> & nodecount,
     auto raw_netlist = FakeNetwork::get_scored_moves(
         &state);
 
-	//if (raw_netlist.first.size() < 20) {
-	//	state.print_board();
-	//}
+	if (raw_netlist.first.size() == 0) {
+		state.print_board();
+		assert(raw_netlist.first.size() != 0);
+		return false;
+	}
 
     // DCNN returns winrate as side to move
 	win_rate = raw_netlist.second;
@@ -302,6 +304,10 @@ UCTNode* UCTNode::uct_select_child(Player turn) {
 
     LOCK(get_mutex(), lock);
 
+    if(this->possoble_moves.size() == 0){
+    	best_value =  -100.0f;
+    }
+
     // Count parentvisits.
     // We do this manually to avoid issues with transpositions.
     int parentvisits = 0;
@@ -329,6 +335,10 @@ UCTNode* UCTNode::uct_select_child(Player turn) {
 		}
 	}
 
+	if (best == nullptr)
+	{
+		std::cout << this->possoble_moves.size();
+	}
     assert(best != nullptr);
 
     return best;

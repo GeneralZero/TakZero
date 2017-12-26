@@ -86,6 +86,9 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 
     if (node->has_children() && !result.valid()) {
 		//Select part of Monte Carlo
+        if(node->possoble_moves.size() == 0){
+            currstate.print_board();
+        }
         auto next = node->uct_select_child(turn);
 
 
