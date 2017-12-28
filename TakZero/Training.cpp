@@ -295,6 +295,10 @@ int Training::save_game(std::string foldername, std::string file_name)
 	file.close();
 
 	m_data.clear();
+
+	delete[] planes;
+	delete[] probs;
+	delete[] win_rates;
 	return 1;
 }
 

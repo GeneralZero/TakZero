@@ -64,21 +64,22 @@ void Board::SaveFastBoard() {
 	auto new_board = std::array< uint8_t, 5 * 5 * 32>{{0}};
 	for (size_t i = 0; i < this->SIZE * this->SIZE; i++)
 	{
+		std::vector<uint8_t> temp(this->board[i].size());
+		std::reverse_copy(this->board[i].begin(), this->board[i].end(), temp.begin());
 		size_t j = 0;
 		bool add_last = false;
 		uint8_t to_put = 0;
-		uint32_t start_index = (i * 32);
-		uint32_t end_index = start_index;
+		uint32_t end_index = (i * 32);
 
-		for (; j < this->board[i].size(); j++)
+		for (; j < temp.size(); j++)
 		{
 			end_index = (i * 32)+std::floor(j/2);
 			if (add_last == false) {
-				to_put = ((7 & this->board[i].at(j)) << 4);
+				to_put = ((7 & temp.at(j)) << 4);
 				add_last = true;
 			}
 			else {
-				to_put += ((7 & this->board[i].at(j)));
+				to_put += ((7 & temp.at(j)));
 				new_board.at(end_index) = to_put;
 				to_put = 0;
 				add_last = false;
@@ -90,7 +91,7 @@ void Board::SaveFastBoard() {
 		}
 		
 		// Reverse cell top to begining.
-		std::reverse(new_board.begin() + start_index, new_board.begin() + end_index);
+		//std::reverse(new_board.begin() + start_index, new_board.begin() + end_index);
 	}
 	this->prev_boards.push_back(new_board);
 }

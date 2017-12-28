@@ -49,9 +49,10 @@ public:
         Maximum size of the tree in memory. Nodes are about
         40 bytes, so limit to ~1.6G.
     */
-    static constexpr auto MAX_TREE_SIZE = 30000000;
+    static constexpr auto MAX_TREE_SIZE = 5000000;
 	
     UCTSearch(Board & g);
+    ~UCTSearch();
     void set_playout_limit(uint playouts);
     void ponder();
     bool is_running() const;

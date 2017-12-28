@@ -32,7 +32,7 @@ public:
     void sync(uint64_t hash, UCTNode * node);
 
 private:
-    TTable(int size = 500000);
+    TTable(int size = 5000000);
 
     SMP::Mutex m_mutex;
     std::vector<TTEntry> m_buckets;

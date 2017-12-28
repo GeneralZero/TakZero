@@ -66,7 +66,6 @@ int main(int argc, char *argv[])
 		//Create Game 
 		Board* maingame = new Board(5);
 		Training training = Training(); 
-		auto search = std::make_unique<UCTSearch>(*maingame);
 
 		//Get new Prob from DeepLearning (Threaded it takes a while)
 		auto ml_data = maingame->getMLData();
@@ -75,6 +74,7 @@ int main(int argc, char *argv[])
 
 			uint16_t move;
 			bool white_turn = maingame->white_turn;
+			auto search = std::make_unique<UCTSearch>(*maingame);
 
 			//Wait for ML thread
 
@@ -87,10 +87,9 @@ int main(int argc, char *argv[])
 			}
 
 			//Change nodes to new node (Threaded It takes a while)
-			search->swap_root(move);
+			//search->swap_root(move);
 
 			//Save Probs to disk (Threaded)
-
 
 			maingame->white_turn = white_turn;
 			//Print Move
@@ -107,6 +106,8 @@ int main(int argc, char *argv[])
 
 			//Wait for Node update thread
 			//training.dump_game();
+			auto * raw = search.release();        // pointer to no-longer-managed object
+			delete raw;
 		}
 		if (maingame->white_win && maingame->black_win) {
 			maingame->print_board();
@@ -122,9 +123,9 @@ int main(int argc, char *argv[])
 			std::cout << "Black Win" << std::endl;
 			black_win++;
 		}
+		//delete search;
 
-		auto * raw = search.release();        // pointer to no-longer-managed object
-		delete raw;
+		delete maingame;
 		
 		std::cout << "White Win: " << white_win << ", Black Win: " << black_win << std::endl;
 		training.dump_game();

@@ -58,16 +58,6 @@ SMP::Mutex& UCTNode::get_mutex() {
     return m_nodemutex;
 }
 
-float UCTNode::get_cur_score() const
-{
-	return m_curent_score;
-}
-
-void UCTNode::set_cur_score(float score)
-{
-	m_curent_score = score;
-}
-
 bool UCTNode::create_children(std::atomic<int> & nodecount,
                               Board & state,
                               float & win_rate) {
@@ -327,7 +317,7 @@ UCTNode* UCTNode::uct_select_child(Player turn) {
 		float denom = 1.0f + this->possoble_moves[i]->get_visits();
 		float puct = ConfigStore::get().doubles.at("cfg_puct") * psa * (numerator / denom);
 		float value = winrate + puct;
-		this->possoble_moves[i]->set_cur_score(value);
+		//this->possoble_moves[i]->set_cur_score(value);
 
 		if (value > best_value) {
 			best_value = value;
