@@ -8,6 +8,7 @@
 #endif
 
 #include <math.h>
+#include <cmath>
 #include "MD5.h"
 #include <iostream>
 #include "H5Cpp.h"
@@ -161,7 +162,7 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 {
 	TimeStep output;
 	//Transform Boards
-	uint i = 0;
+	uint16_t i = 0;
 	for (; i < input.planes.size() - 2; i++) {
 		output.planes[i] = rotateBoard(input.planes[i], transformation);
 	}
@@ -295,6 +296,10 @@ int Training::save_game(std::string foldername, std::string file_name)
 	file.close();
 
 	m_data.clear();
+
+	delete[] planes;
+	delete[] probs;
+	delete[] win_rates;
 	return 1;
 }
 

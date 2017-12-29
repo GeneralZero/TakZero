@@ -49,10 +49,11 @@ public:
         Maximum size of the tree in memory. Nodes are about
         40 bytes, so limit to ~1.6G.
     */
-    static constexpr auto MAX_TREE_SIZE = 30000000;
+    static constexpr auto MAX_TREE_SIZE = 60000000;
 	
     UCTSearch(Board & g);
-    void set_playout_limit(uint playouts);
+    ~UCTSearch();
+    void set_playout_limit(uint64_t playouts);
     void ponder();
     bool is_running() const;
     bool playout_limit_reached() const;
@@ -61,21 +62,21 @@ public:
 	void swap_root(int move_number);
     SearchResult play_simulation(Board & currstate, UCTNode * const node);
 
-	uint32_t white_win{0};
-	uint32_t black_win{ 0 };
-	uint32_t tie_win{ 0 };
+	uint64_t white_win{0};
+	uint64_t black_win{ 0 };
+	uint64_t tie_win{ 0 };
 
 private:
     void dump_stats(Board & state, UCTNode & parent);
 	int get_best_move(Player turn);
-    void dump_analysis(uint playouts);
+    void dump_analysis(uint64_t playouts);
 
 	std::string get_pv(Board & state, UCTNode & parent, uint8_t depth);
 
     Board & m_rootstate;
     UCTNode* m_root;
-    std::atomic<int> m_nodes{0};
-    std::atomic<int> m_playouts{0};
+    std::atomic<uint64_t> m_nodes{0};
+    std::atomic<uint64_t> m_playouts{0};
     std::atomic<bool> m_run{false};
     int m_maxplayouts;
 };

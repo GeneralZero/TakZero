@@ -21,7 +21,7 @@ public:
     bool first_visit() const;
     bool has_children() const;
 	void set_visits(uint64_t visits);
-    bool create_children(std::atomic<int> & nodecount,
+    bool create_children(std::atomic<uint64_t> & nodecount,
                          Board & state, float & eval);
 	int add_move_nodes(std::vector<scored_node> nodelist, float win_rate);
     float eval_state(Board& state);
@@ -45,10 +45,6 @@ public:
 	SMP::Mutex& get_mutex();
 
 	std::vector<UCTNode*> possoble_moves;
-
-	float m_curent_score;
-	float get_cur_score() const;
-	void set_cur_score(float score);
 private:
     UCTNode();
 
@@ -61,7 +57,6 @@ private:
     std::atomic<uint64_t> m_visits{0};
     std::atomic<uint64_t> m_virtual_loss{0};
     // UCT eval
-
     float m_score;
     float m_prev_win_rate;
     std::atomic<double> m_black_win{0};
