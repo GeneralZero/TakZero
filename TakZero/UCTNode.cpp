@@ -325,10 +325,6 @@ UCTNode* UCTNode::uct_select_child(Player turn) {
 		}
 	}
 
-	if (best == nullptr)
-	{
-		std::cout << this->possoble_moves.size();
-	}
     assert(best != nullptr);
 
     return best;

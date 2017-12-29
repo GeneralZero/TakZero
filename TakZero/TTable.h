@@ -10,7 +10,7 @@ public:
     TTEntry() = default;
 
     uint64_t m_hash{0};
-    int m_visits;
+	uint64_t m_visits;
     double m_black_wins;
 };
 
