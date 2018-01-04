@@ -1,7 +1,7 @@
 CC=g++
 CLANG=clang++
-CFLAGS=-c -g -Wall -std=c++14 -Wno-unused-variable -Ofast
-LDFLAGS=-lz -lm -lhdf5 -lhdf5_cpp -lstdc++fs -lpthread
+CFLAGS=-c -g -Wall -std=c++14 -Wno-unused-variable -Ofast -I /usr/include/hdf5/serial -pthread
+LDFLAGS=-pthread -lpthread -L /usr/lib/x86_64-linux-gnu/hdf5/serial/ -lz -lm -lhdf5_cpp -lhdf5 -lstdc++fs
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=TakZero
@@ -13,7 +13,7 @@ test: $(SRC)
 all: $(SOURCES) $(EXECUTABLE)
     
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@-gcc
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@-gcc
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@

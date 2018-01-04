@@ -1043,7 +1043,7 @@ uint64_t Board::get_hash()
 	auto res = uint64_t{ 0x1234567887654321ULL };
 
 	//Get Hash from board
-	for (uint i = 0; i < this->board.size(); i++) {
+	for (uint16_t i = 0; i < this->board.size(); i++) {
 		for (size_t j = 0; j < this->board[i].size(); j++)
 		{
 			res ^= Zobrist::zobrist[this->board[i][j]][(i*64) + j];

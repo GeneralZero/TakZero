@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_random_cnt", 30));
 	ConfigStore::get().ints.insert(std::pair<std::string, uint64_t>("cfg_rng_seed",562312454));
 	
-	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", true));
+	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", false));
 	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_noise", true));
 
 	ConfigStore::get().doubles.insert(std::pair<std::string, double>("cfg_resignpct", 0.0));

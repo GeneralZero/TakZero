@@ -21,7 +21,7 @@ public:
     bool first_visit() const;
     bool has_children() const;
 	void set_visits(uint64_t visits);
-    bool create_children(std::atomic<int> & nodecount,
+    bool create_children(std::atomic<uint64_t> & nodecount,
                          Board & state, float & eval);
 	int add_move_nodes(std::vector<scored_node> nodelist, float win_rate);
     float eval_state(Board& state);
