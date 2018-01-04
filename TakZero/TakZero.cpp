@@ -7,6 +7,8 @@
 #include "UCTSearch.h"
 #include "ThreadPool.h"
 #include "Training.h"
+#include "Random.h"
+#include "Zobrist.h"
 
 #include <memory>
 #include <string>
@@ -54,6 +56,10 @@ int main(int argc, char *argv[])
 	
 	//Setup the Connection back to Tensorflow
 	FakeNetwork::initialize();
+
+	    // Use deterministic random numbers for hashing
+    auto rng = std::make_unique<Random>(5489);
+	Zobrist::init_zobrist(*rng);
 
 	//Setup threads
 	thread_pool.initialize(ConfigStore::get().ints.at("cfg_num_threads"));
