@@ -1,7 +1,7 @@
 CC=g++
 CLANG=clang++
 CFLAGS=-c -g -Wall -std=c++14 -Wno-unused-variable -Ofast -I /usr/include/hdf5/serial -pthread
-LDFLAGS=-pthread -lpthread -L /usr/lib/x86_64-linux-gnu/hdf5/serial/ -lz -lm -lhdf5_cpp -lhdf5 -lstdc++fs
+LDFLAGS=-pthread -lpthread -L /usr/lib/x86_64-linux-gnu/hdf5/serial/ -lz -lm -lhdf5_cpp -lhdf5 -lstdc++fs -lcurl
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=TakZero

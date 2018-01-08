@@ -30,12 +30,12 @@ int main(int argc, char *argv[])
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_max_playouts", 1600));
-	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_num_threads", concurentThreadsSupported- 2));
+	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_num_threads", concurentThreadsSupported- 3));
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_lagbuffer_cs", 10));
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_random_cnt", 30));
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_rng_seed",562312454));
 	
-	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", false));
+	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", true));
 	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_noise", true));
 
 	ConfigStore::get().doubles.insert(std::pair<std::string, double>("cfg_resignpct", 0.0));
@@ -68,11 +68,13 @@ int main(int argc, char *argv[])
 	int black_win = 0;
 	std::string prev_game = "";
 
+	Training training = Training(); 
+	training.setFolderName("Training");
+
 	for (size_t i = 0; i < 50000; i++)
 	{
 		//Create Game 
 		Board* maingame = new Board(5);
-		Training training = Training(); 
 
 		//Get new Prob from DeepLearning (Threaded it takes a while)
 		auto ml_data = maingame->getMLData();
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
 		std::cout << "White Win: " << white_win << ", Black Win: " << black_win << std::endl;
 
 		if (prev_game != "") {
-			training.uploadGame("", prev_game);
+			training.uploadGame(prev_game);
 		}
 		prev_game = training.dump_game();
 	}

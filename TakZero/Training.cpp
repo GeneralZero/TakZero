@@ -4,10 +4,10 @@
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
 #include <direct.h>
-#define GetCurrentDir _getcwd
+#define SLASH "\\"
 #else
 #include <unistd.h>
-#define GetCurrentDir getcwd
+#define SLASH "/"
 #endif
 
 #include <math.h>
@@ -23,13 +23,6 @@
 #include <curl/curl.h>
 
 std::vector<TimeStep> Training::m_data{};
-
-std::string GetCurrentWorkingDir(void) {
-	char buff[FILENAME_MAX];
-	GetCurrentDir(buff, FILENAME_MAX);
-	std::string current_working_dir(buff);
-	return current_working_dir;
-}
 
 void Training::record(Board & state, UCTNode & root)
 {
@@ -82,14 +75,14 @@ std::string Training::dump_game()
 	//Create MD5 hash
 
 	auto data_md5 = MD5((char*)this->m_data.data(), this->m_data.size() * sizeof(TimeStep));
-	std::string file_name = "Game_" + data_md5.hexdigest() + ".hdf5";
+	std::string filename = "Game_" + data_md5.hexdigest() + ".hdf5";
 
 	//Save Game
-	save_game(directory, file_name);
+	save_game(filename);
 
 	//Upload Game
-	//uploadGame(directory, file_name);
-	return file_name;
+	//uploadGame(directory, filename);
+	return filename;
 }
 
 int Training::get_new_index(std::uint8_t index, std::uint8_t transformation)
@@ -236,20 +229,22 @@ TimeStep Training::transformTimeStep(TimeStep input, std::uint8_t transformation
 
 	return output;
 }
+void Training::setFolderName(std::string foldername){
+	this->foldername = foldername;
+}
 
-int Training::save_game(std::string foldername, std::string file_name)
+int Training::save_game(std::string filename)
 {
 	const size_t size = this->m_data.size();
-	std::cout << "Saving " << size << " boards to " << file_name << std::endl;
+	std::cout << "Saving " << size << " boards to " << filename << std::endl;
 
-	//std::experimental::filesystem::path myDirectory = foldername;
-	//if (!std::experimental::filesystem::is_directory(foldername)) {
-	//	std::experimental::filesystem::create_directory(foldername);
-	//	//_chdir(foldername.c_str());
-	//}
+	std::experimental::filesystem::path myDirectory = this->foldername;
+	if (!std::experimental::filesystem::is_directory(this->foldername)) {
+		std::experimental::filesystem::create_directory(this->foldername);
+	}
 
-	//std::string location = foldername + "\\" + file_name;
-	H5::H5File file(file_name.c_str(), H5F_ACC_TRUNC);
+	std::string location = this->foldername + SLASH + filename;
+	H5::H5File file(location.c_str(), H5F_ACC_TRUNC);
 
 	NNInput *planes = new NNInput[size];
 	PlayProb *probs = new PlayProb[size];
@@ -321,10 +316,12 @@ int Training::save_game(std::string foldername, std::string file_name)
 	return 1;
 }
 
-int Training::uploadGame(std::string foldername, std::string filename)
+int Training::uploadGame(std::string filename)
 {
-	CURL *curl;
 	CURLcode res;
+	CURL *curl;
+	curl_mime *mime1;
+	curl_mimepart *part1;
 
 	struct curl_httppost *post = NULL;
 	struct curl_httppost *last = NULL;
@@ -333,40 +330,44 @@ int Training::uploadGame(std::string foldername, std::string filename)
 
 	curl = curl_easy_init();
 	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-		curl_easy_setopt(curl, CURLOPT_URL, "https://httpbin.org/post");
+		mime1 = NULL;
+
+		curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 102400L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_easy_setopt(curl, CURLOPT_URL, "https://zero.generalzero.org/submit_game");
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 
 		//Open file
-		std::ifstream input(filename, std::ios::binary);
+		std::string location = this->foldername + SLASH + filename;
+		std::ifstream input(location, std::ios::binary);
 		// copies all data into buffer
 		std::vector<char> buffer((
 			std::istreambuf_iterator<char>(input)),
 			(std::istreambuf_iterator<char>()));
 
-		/* Fill in the file upload field */
-		curl_formadd(&post, &last,
-			CURLFORM_COPYNAME, "game",
-			CURLFORM_BUFFER, buffer,
-			CURLFORM_BUFFERLENGTH, buffer.size(),
-			CURLFORM_END
-		);
-
-		/* Fill in the network field */
-		curl_formadd(&post, &last,
-			CURLFORM_COPYNAME, "network",
-			CURLFORM_COPYCONTENTS, foldername,
-			CURLFORM_END
-		);
-
-		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
+		mime1 = curl_mime_init(curl);
+		part1 = curl_mime_addpart(mime1);
+		curl_mime_filedata(part1, location.c_str());
+		curl_mime_name(part1, "game");
+		part1 = curl_mime_addpart(mime1);
+		curl_mime_data(part1, this->foldername.c_str(), CURL_ZERO_TERMINATED);
+		curl_mime_name(part1, "network");
+		curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime1);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.57.0");
+		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
+		curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_2TLS);
 
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
+		curl = NULL;
+		curl_mime_free(mime1);
+		mime1 = NULL;
 
 		/* Check for errors */
 		if (res != CURLE_OK){
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 				curl_easy_strerror(res));
+			return 0;
 		}
 		return 1;
 	}
