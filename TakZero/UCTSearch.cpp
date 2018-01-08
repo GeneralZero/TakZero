@@ -213,7 +213,7 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent, uint8_t depth) {
 }
 
 
-void UCTSearch::dump_analysis(uint64_t playouts) {
+void UCTSearch::dump_analysis(std::uint64_t playouts) {
 	if (ConfigStore::get().bools.at("cfg_quiet")) {
 		return;
 	}
@@ -266,7 +266,7 @@ int UCTSearch::think(Player turn, Training training) {
 
 	m_rootstate.get_timecontrol().set_boardsize(m_rootstate.SIZE);
 
-	uint64_t time_for_move = m_rootstate.get_timecontrol().max_time_for_move(turn);
+	std::uint64_t time_for_move = m_rootstate.get_timecontrol().max_time_for_move(turn);
 
 	if (turn == White) {
 		Utils::myprintf("White Turn\n");
@@ -294,14 +294,14 @@ int UCTSearch::think(Player turn, Training training) {
 	//Rollout & back prop
 	m_run = true;
 
-	uint16_t cpus = ConfigStore::get().ints.at("cfg_num_threads");
+	std::uint16_t cpus = ConfigStore::get().ints.at("cfg_num_threads");
 	Utils::ThreadGroup tg(thread_pool);
-	for (uint16_t i = 1; i < cpus; i++) {
+	for (std::uint16_t i = 1; i < cpus; i++) {
 		tg.add_task(UCTWorker(m_rootstate, this, m_root));
 	}
 
 	bool keeprunning = true;
-	uint64_t last_update = 0;
+	std::uint64_t last_update = 0;
 	do {
 		auto currstate = std::make_unique<Board>(m_rootstate);
 
@@ -311,13 +311,13 @@ int UCTSearch::think(Player turn, Training training) {
 		}
 
 		Time elapsed;
-		uint64_t centiseconds_elapsed = Time::timediff(start, elapsed);
+		std::uint64_t centiseconds_elapsed = Time::timediff(start, elapsed);
 
 		// output some stats every few seconds
 		// check if we should still search
 		if (centiseconds_elapsed - last_update > 250) {
 			last_update = centiseconds_elapsed;
-			dump_analysis(static_cast<uint64_t>(m_playouts));
+			dump_analysis(static_cast<std::uint64_t>(m_playouts));
 		}
 		keeprunning  = is_running();
 		keeprunning &= (centiseconds_elapsed < time_for_move);
@@ -336,12 +336,12 @@ int UCTSearch::think(Player turn, Training training) {
 	training.record(m_rootstate, *m_root);
 
 	Time elapsed;
-	uint64_t centiseconds_elapsed = Time::timediff(start, elapsed);
+	std::uint64_t centiseconds_elapsed = Time::timediff(start, elapsed);
 	if (centiseconds_elapsed > 0) {
 		Utils::myprintf("%d visits, %d nodes, %d playouts, %d n/s\n\n",
 				 m_root->get_visits(),
-				 static_cast<uint64_t>(m_nodes),
-				 static_cast<uint64_t>(m_playouts),
+				 static_cast<std::uint64_t>(m_nodes),
+				 static_cast<std::uint64_t>(m_playouts),
 				 (m_playouts * 100) / (centiseconds_elapsed+1));
 	}
 	int bestmove = get_best_move(turn);
@@ -354,7 +354,7 @@ void UCTSearch::swap_root(int move_number) {
 
 	UCTNode* new_root;
 	UCTNode* old_root;
-	uint64_t size = 0;
+	std::uint64_t size = 0;
 	//best node is the first node so delete others
 	for (size_t i = 0; i < this->m_root->possoble_moves.size(); i++)
 	{
@@ -384,9 +384,9 @@ void UCTSearch::ponder() {
 	assert(m_nodes == 0);
 
 	m_run = true;
-	uint16_t cpus = ConfigStore::get().ints.at("cfg_num_threads") ;
+	std::uint16_t cpus = ConfigStore::get().ints.at("cfg_num_threads") ;
 	Utils::ThreadGroup tg(thread_pool);
-	for (uint16_t i = 1; i < cpus; i++) {
+	for (std::uint16_t i = 1; i < cpus; i++) {
 		tg.add_task(UCTWorker(m_rootstate, this, m_root));
 	}
 	do {
@@ -408,7 +408,7 @@ void UCTSearch::ponder() {
 	Utils::myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), (int)m_nodes);
 }
 
-void UCTSearch::set_playout_limit(uint64_t playouts) {
+void UCTSearch::set_playout_limit(std::uint64_t playouts) {
 	static_assert(std::is_convertible<decltype(playouts),
 									  decltype(m_maxplayouts)>::value,
 				  "Inconsistent types for playout amount.");

@@ -10,15 +10,15 @@ TTable* TTable::get_TT(void) {
 	return &s_ttable;
 }
 
-TTable::TTable(int size) {
+TTable::TTable(std::uint64_t size) {
 	LOCK(m_mutex, lock);
 	m_buckets.resize(size);
 }
 
-void TTable::update(uint64_t hash, const UCTNode * node) {
+void TTable::update(std::uint64_t hash, const UCTNode * node) {
 	LOCK(m_mutex, lock);
 
-	unsigned int index = (unsigned int)hash;
+	auto index = hash;
 	index %= m_buckets.size();
 
 	/*
@@ -29,7 +29,7 @@ void TTable::update(uint64_t hash, const UCTNode * node) {
 	m_buckets[index].m_black_wins = node->get_black_wins();
 }
 
-void TTable::sync(uint64_t hash, UCTNode * node) {
+void TTable::sync(std::uint64_t hash, UCTNode * node) {
 	LOCK(m_mutex, lock);
 
 	unsigned int index = (unsigned int)hash;

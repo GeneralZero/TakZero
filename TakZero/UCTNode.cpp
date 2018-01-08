@@ -59,7 +59,7 @@ SMP::Mutex& UCTNode::get_mutex() {
 }
 
 
-bool UCTNode::create_children(std::atomic<uint64_t> & nodecount,
+bool UCTNode::create_children(std::atomic<std::uint64_t> & nodecount,
 							  Board & state,
 							  float & win_rate) {
 	// check whether somebody beat us to it (atomic)
@@ -225,7 +225,7 @@ bool UCTNode::has_children() const {
 	return m_has_children;
 }
 
-void UCTNode::set_visits(uint64_t visits) {
+void UCTNode::set_visits(std::uint64_t visits) {
 	m_visits = visits;
 }
 
@@ -250,7 +250,7 @@ float UCTNode::get_eval(Player turn) const {
 	// Due to the use of atomic updates and virtual losses, it is
 	// possible for the visit count to change underneath us. Make sure
 	// to return a consistent result to the caller by caching the values.
-	auto virtual_loss = uint64_t{m_virtual_loss};
+	auto virtual_loss = std::uint64_t{m_virtual_loss};
 	auto visits = get_visits() + virtual_loss;
 	if (visits > 0) {
 		auto black_wins = get_black_wins();

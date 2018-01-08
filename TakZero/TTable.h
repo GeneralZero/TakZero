@@ -9,8 +9,8 @@ class TTEntry {
 public:
 	TTEntry() = default;
 
-	uint64_t m_hash{0};
-	uint64_t m_visits;
+	std::uint64_t m_hash{0};
+	std::uint64_t m_visits;
 	double m_black_wins;
 };
 
@@ -24,15 +24,15 @@ public:
 	/*
 		update corresponding entry
 	*/
-	void update(uint64_t hash, const UCTNode * node);
+	void update(std::uint64_t hash, const UCTNode * node);
 
 	/*
 		sync given node with TT
 	*/
-	void sync(uint64_t hash, UCTNode * node);
+	void sync(std::uint64_t hash, UCTNode * node);
 
 private:
-	TTable(int size = 5000000);
+	TTable(std::uint64_t = 50000000);
 
 	SMP::Mutex m_mutex;
 	std::vector<TTEntry> m_buckets;

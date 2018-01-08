@@ -20,16 +20,17 @@ class Training {
 public:
 	void record(Board & state, UCTNode & root);
 
-	void dump_game();
+	std::string dump_game();
 	static std::vector<TimeStep> m_data;
+	int uploadGame(std::string foldername, std::string filename);
+
 private:
 	//Rotate Board
 	int get_new_index(uint8_t index, uint8_t transformation);
 	FastBoard rotateBoard(FastBoard board, uint8_t transformation);
 	TimeStep transformTimeStep(TimeStep input, uint8_t transformation);
 	int save_game(std::string foldername, std::string file_name);
-
-	int uploadGame(std::string foldername, std::string filename);
+	
 
 	//Rotate Board
 	Board rotate_Board{5};

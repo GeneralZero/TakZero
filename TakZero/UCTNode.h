@@ -20,8 +20,8 @@ public:
     ~UCTNode();
     bool first_visit() const;
     bool has_children() const;
-	void set_visits(uint64_t visits);
-    bool create_children(std::atomic<uint64_t> & nodecount,
+	void set_visits(std::uint64_t visits);
+    bool create_children(std::atomic<std::uint64_t> & nodecount,
                          Board & state, float & eval);
 	int add_move_nodes(std::vector<scored_node> nodelist, float win_rate);
     float eval_state(Board& state);
@@ -54,8 +54,8 @@ private:
     // Move
     int m_move;
     // UCT
-    std::atomic<uint64_t> m_visits{0};
-    std::atomic<uint64_t> m_virtual_loss{0};
+    std::atomic<std::uint64_t> m_visits{0};
+    std::atomic<std::uint64_t> m_virtual_loss{0};
     // UCT eval
     float m_score;
     float m_prev_win_rate;

@@ -212,7 +212,7 @@ void TimeControl::adjust_time(Player color, int time, int stones) {
 void TimeControl::set_boardsize(int boardsize) {
 	// Note this is constant as we play, so it's fair
 	// to underestimate quite a bit.
-	m_moves_expected = (boardsize * boardsize) * 15;
+	m_moves_expected = (boardsize * boardsize) * 5;
 }
 
 int TimeControl::get_remaining_time(Player color) {

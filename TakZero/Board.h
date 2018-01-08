@@ -4,23 +4,23 @@
 #include "Move.h"
 #include "TimeControl.h"
 
-typedef std::array< uint8_t, 5 * 5 * 32> FastBoard;
+typedef std::array< std::uint8_t, 5 * 5 * 32> FastBoard;
 
 class Board
 {
 public:
-	Board(uint8_t size);
+	Board(std::uint8_t size);
 	Board();
 	~Board();
 	
 	//Game paramaters
-	uint8_t SIZE;
-	uint8_t white_capstones;
-	uint8_t black_capstones;
-	uint8_t white_pieces;
-	uint8_t black_pieces;
+	std::uint8_t SIZE;
+	std::uint8_t white_capstones;
+	std::uint8_t black_capstones;
+	std::uint8_t white_pieces;
+	std::uint8_t black_pieces;
 	bool white_turn;
-	uint8_t move_number;
+	std::uint8_t move_number;
 	bool white_win;
 	bool black_win;
 
@@ -36,30 +36,30 @@ public:
 
 	void UpdateTops(Location location);
 
-	uint16_t GetPlayIndex(Play move);
+	std::uint16_t GetPlayIndex(Play move);
 
 	void WallCrush(Location current_square, std::vector<Piece>);
 
-	uint8_t getArrayIndex(uint8_t x, uint8_t y);
+	std::uint8_t getArrayIndex(std::uint8_t x, std::uint8_t y);
 
 	void PlayIndex(Play move);
 
 	void PlayIndex(int index);
 
 	//Index paramaters
-	std::vector<uint8_t> distance_table;
+	std::vector<std::uint8_t> distance_table;
 
 	//Index functions
-	uint16_t GetPlacementIndex(Play move);
-	uint16_t GetMoveIndex(Play move);
+	std::uint16_t GetPlacementIndex(Play move);
+	std::uint16_t GetMoveIndex(Play move);
 
-	std::vector<std::vector<uint8_t>> GenerateMoveArrays(uint8_t distance, uint8_t to_move, bool cap);
+	std::vector<std::vector<std::uint8_t>> GenerateMoveArrays(std::uint8_t distance, std::uint8_t to_move, bool cap);
 
-	uint64_t get_hash();
+	std::uint64_t get_hash();
 
 	std::vector<Play> getAllPlays();
 
-	Play GetMoveFromIndex(uint16_t move);
+	Play GetMoveFromIndex(std::uint16_t move);
 
 	void stop_clock(Player color);
 

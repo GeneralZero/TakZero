@@ -1038,9 +1038,9 @@ std::vector<std::vector<uint8_t>> Board::GenerateMoveArrays(uint8_t distance, ui
 
 }
 
-uint64_t Board::get_hash()
+std::uint64_t Board::get_hash()
 {
-	auto res = uint64_t{ 0x1234567887654321ULL };
+	auto res = std::uint64_t{ 0x1234567887654321ULL };
 
 	//Get Hash from board
 	for (uint16_t i = 0; i < this->board.size(); i++) {

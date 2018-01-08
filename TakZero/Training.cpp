@@ -3,17 +3,33 @@
 #include <experimental/filesystem>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
+#include <direct.h>
+#define GetCurrentDir _getcwd
 #else
-
+#include <unistd.h>
+#define GetCurrentDir getcwd
 #endif
 
 #include <math.h>
 #include <cmath>
 #include "MD5.h"
 #include <iostream>
+#include <fstream>
+#include <iterator>
+#include <vector>
+
 #include "H5Cpp.h"
 
+#include <curl/curl.h>
+
 std::vector<TimeStep> Training::m_data{};
+
+std::string GetCurrentWorkingDir(void) {
+	char buff[FILENAME_MAX];
+	GetCurrentDir(buff, FILENAME_MAX);
+	std::string current_working_dir(buff);
+	return current_working_dir;
+}
 
 void Training::record(Board & state, UCTNode & root)
 {
@@ -26,7 +42,7 @@ void Training::record(Board & state, UCTNode & root)
 
 	// Get total visit amount. We count rather
 	// than trust the root to avoid ttable issues.
-	uint64_t sum_visits = 0;
+	std::uint64_t sum_visits = 0;
 
 	auto a = root.possoble_moves.size();
 
@@ -43,7 +59,7 @@ void Training::record(Board & state, UCTNode & root)
 
 	for (size_t i = 0; i < a; i++) {
 		float prob = static_cast<float>((float)root.possoble_moves[i]->get_visits() / (float)sum_visits);
-		uint16_t move = root.possoble_moves[i]->get_move();
+		std::uint16_t move = root.possoble_moves[i]->get_move();
 		step.probabilities[move] = prob;
 	}
 
@@ -57,7 +73,7 @@ void Training::record(Board & state, UCTNode & root)
 	}
 }
 
-void Training::dump_game()
+std::string Training::dump_game()
 {
 	std::string directory = "Testing";
 
@@ -73,9 +89,10 @@ void Training::dump_game()
 
 	//Upload Game
 	//uploadGame(directory, file_name);
+	return file_name;
 }
 
-int Training::get_new_index(uint8_t index, uint8_t transformation)
+int Training::get_new_index(std::uint8_t index, std::uint8_t transformation)
 {
 	int old_x = index % this->rotate_Board.SIZE;
 	int old_y = std::floor(index / this->rotate_Board.SIZE);
@@ -144,7 +161,7 @@ int Training::get_new_index(uint8_t index, uint8_t transformation)
 	}
 }
 
-FastBoard Training::rotateBoard(FastBoard board, uint8_t transformation)
+FastBoard Training::rotateBoard(FastBoard board, std::uint8_t transformation)
 {
 	FastBoard new_board;
 
@@ -158,11 +175,11 @@ FastBoard Training::rotateBoard(FastBoard board, uint8_t transformation)
 	return new_board;
 }
 
-TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
+TimeStep Training::transformTimeStep(TimeStep input, std::uint8_t transformation)
 {
 	TimeStep output;
 	//Transform Boards
-	uint16_t i = 0;
+	std::uint16_t i = 0;
 	for (; i < input.planes.size() - 2; i++) {
 		output.planes[i] = rotateBoard(input.planes[i], transformation);
 	}
@@ -223,6 +240,7 @@ TimeStep Training::transformTimeStep(TimeStep input, uint8_t transformation)
 int Training::save_game(std::string foldername, std::string file_name)
 {
 	const size_t size = this->m_data.size();
+	std::cout << "Saving " << size << " boards to " << file_name << std::endl;
 
 	//std::experimental::filesystem::path myDirectory = foldername;
 	//if (!std::experimental::filesystem::is_directory(foldername)) {
@@ -240,7 +258,7 @@ int Training::save_game(std::string foldername, std::string file_name)
 	for (size_t i = 0; i < size; i++)
 	{
 		for(size_t j = 0; j < 8; j++){
-			std::memcpy(planes[i][j].data(), this->m_data[i].planes[j].data(),sizeof(uint8_t)* 5 * 5 * 32);
+			std::memcpy(planes[i][j].data(), this->m_data[i].planes[j].data(),sizeof(std::uint8_t)* 5 * 5 * 32);
 		}
 		std::memcpy(probs[i].data(), this->m_data[i].probabilities.data(), sizeof(float) * 1575);
 		win_rates[i] = this->m_data[i].net_winrate;
@@ -305,5 +323,52 @@ int Training::save_game(std::string foldername, std::string file_name)
 
 int Training::uploadGame(std::string foldername, std::string filename)
 {
+	CURL *curl;
+	CURLcode res;
+
+	struct curl_httppost *post = NULL;
+	struct curl_httppost *last = NULL;
+
+	curl_global_init(CURL_GLOBAL_ALL);
+
+	curl = curl_easy_init();
+	if (curl) {
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+		curl_easy_setopt(curl, CURLOPT_URL, "https://httpbin.org/post");
+
+		//Open file
+		std::ifstream input(filename, std::ios::binary);
+		// copies all data into buffer
+		std::vector<char> buffer((
+			std::istreambuf_iterator<char>(input)),
+			(std::istreambuf_iterator<char>()));
+
+		/* Fill in the file upload field */
+		curl_formadd(&post, &last,
+			CURLFORM_COPYNAME, "game",
+			CURLFORM_BUFFER, buffer,
+			CURLFORM_BUFFERLENGTH, buffer.size(),
+			CURLFORM_END
+		);
+
+		/* Fill in the network field */
+		curl_formadd(&post, &last,
+			CURLFORM_COPYNAME, "network",
+			CURLFORM_COPYCONTENTS, foldername,
+			CURLFORM_END
+		);
+
+		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post);
+
+		res = curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
+
+		/* Check for errors */
+		if (res != CURLE_OK){
+			fprintf(stderr, "curl_easy_perform() failed: %s\n",
+				curl_easy_strerror(res));
+		}
+		return 1;
+	}
 	return 0;
 }
