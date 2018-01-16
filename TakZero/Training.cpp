@@ -66,7 +66,7 @@ void Training::record(Board & state, UCTNode & root)
 	}
 }
 
-std::string Training::dump_game()
+std::string Training::dump_game(float winner)
 {
 	std::string directory = "Testing";
 
@@ -78,7 +78,7 @@ std::string Training::dump_game()
 	std::string filename = "Game_" + data_md5.hexdigest() + ".hdf5";
 
 	//Save Game
-	save_game(filename);
+	save_game(filename, winner);
 
 	//Upload Game
 	//uploadGame(directory, filename);
@@ -233,7 +233,7 @@ void Training::setFolderName(std::string foldername){
 	this->foldername = foldername;
 }
 
-int Training::save_game(std::string filename)
+int Training::save_game(std::string filename, float winner)
 {
 	const size_t size = this->m_data.size();
 	std::cout << "Saving " << size << " boards to " << filename << std::endl;
@@ -256,7 +256,7 @@ int Training::save_game(std::string filename)
 			std::memcpy(planes[i][j].data(), this->m_data[i].planes[j].data(),sizeof(std::uint8_t)* 5 * 5 * 32);
 		}
 		std::memcpy(probs[i].data(), this->m_data[i].probabilities.data(), sizeof(float) * 1575);
-		win_rates[i] = this->m_data[i].net_winrate;
+		win_rates[i] = winner;
 	}
 	//Planes input
 	hsize_t     x_input[3] = { size,8, 5 * 5 * 32 };
