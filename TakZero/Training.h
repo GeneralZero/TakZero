@@ -21,7 +21,7 @@ public:
 	void record(Board & state, UCTNode & root);
 	void setFolderName(std::string foldername);
 
-	std::string dump_game();
+	std::string dump_game(int winnner);
 	static std::vector<TimeStep> m_data;
 	int uploadGame(std::string filename);
 
