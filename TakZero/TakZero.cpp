@@ -1,7 +1,7 @@
 // TakZero.cpp : main project file.
 
 #include "TestingBoard.h"
-#include "FakeNetwork.h"
+#include "DLNetwork.h"
 #include "Board.h"
 #include "config.h"
 #include "UCTSearch.h"
@@ -9,6 +9,7 @@
 #include "Training.h"
 #include "Random.h"
 #include "Zobrist.h"
+#include "LoadNetwork.h"
 
 #include <memory>
 #include <string>
@@ -29,14 +30,17 @@ int main(int argc, char *argv[])
 {
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
 
-	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_max_playouts", 1600));
-	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_num_threads", concurentThreadsSupported- 3));
-	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_lagbuffer_cs", 10));
+	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_max_playouts", 400));
+	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_num_threads", concurentThreadsSupported- 2));
+	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_lagbuffer_cs", -100000000));
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_random_cnt", 30));
 	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("cfg_rng_seed",562312454));
+	ConfigStore::get().ints.insert(std::pair<std::string, std::uint64_t>("ipc_port", 64217));
 	
-	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", true));
+	
+	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_quiet", false));
 	ConfigStore::get().bools.insert(std::pair<std::string, bool>("cfg_noise", true));
+	ConfigStore::get().bools.insert(std::pair<std::string, bool>("skip_cache", false));
 
 	ConfigStore::get().doubles.insert(std::pair<std::string, double>("cfg_resignpct", 0.0));
 	ConfigStore::get().doubles.insert(std::pair<std::string, double>("cfg_puct", 0.8));
@@ -55,9 +59,12 @@ int main(int argc, char *argv[])
 	*/
 	
 	//Setup the Connection back to Tensorflow
-	FakeNetwork::initialize();
+	DLNetwork::initialize();
 
-	    // Use deterministic random numbers for hashing
+	//Setup Tensorflow
+	LoadNetwork::initalize("TakZero.pb");
+
+	// Use deterministic random numbers for hashing
     auto rng = std::make_unique<Random>(ConfigStore::get().ints.at("cfg_rng_seed"));
 	Zobrist::init_zobrist(*rng);
 
@@ -75,9 +82,6 @@ int main(int argc, char *argv[])
 	{
 		//Create Game 
 		Board* maingame = new Board(5);
-
-		//Get new Prob from DeepLearning (Threaded it takes a while)
-		auto ml_data = maingame->getMLData();
 
 		while (!maingame->black_win && !maingame->white_win) {
 
@@ -121,27 +125,34 @@ int main(int argc, char *argv[])
 		if (maingame->white_win && maingame->black_win) {
 			maingame->print_board();
 			std::cout << "Tie" << std::endl;
+			if (prev_game != "") {
+				training.uploadGame(prev_game);
+			}
+			prev_game = training.dump_game(0);
 		}
 		else if (maingame->white_win) {
 			maingame->print_board();
 			std::cout << "White Win" << std::endl;
 			white_win++;
+			if (prev_game != "") {
+				training.uploadGame(prev_game);
+			}
+			prev_game = training.dump_game(-1);
 		}
 		else {
 			maingame->print_board();
 			std::cout << "Black Win" << std::endl;
 			black_win++;
+			if (prev_game != "") {
+				training.uploadGame(prev_game);
+			}
+			prev_game = training.dump_game(1);
 		}
 		//delete search;
 
 		delete maingame;
 		
 		std::cout << "White Win: " << white_win << ", Black Win: " << black_win << std::endl;
-
-		if (prev_game != "") {
-			training.uploadGame(prev_game);
-		}
-		prev_game = training.dump_game();
 	}
     return 0;
 }

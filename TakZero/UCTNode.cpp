@@ -35,6 +35,10 @@
 #include "Utility.h"
 #include "Random.h"
 
+#undef min
+
+
+
 
 UCTNode::UCTNode(int move_index, float score, float prev_win_rate)
 	: m_move(move_index), m_score(score), m_prev_win_rate(prev_win_rate) {
@@ -83,7 +87,7 @@ bool UCTNode::create_children(std::atomic<std::uint64_t> & nodecount,
 	m_is_expanding = true;
 	lock.unlock();
 
-	auto raw_netlist = FakeNetwork::get_scored_moves(
+	auto raw_netlist = DLNetwork::get_scored_moves(
 		&state);
 
 	if (raw_netlist.first.size() == 0) {
@@ -156,7 +160,7 @@ int UCTNode::add_move_nodes(std::vector<scored_node> nodelist, float win_rate) {
 }
 
 float UCTNode::eval_state(Board& state) {
-	auto raw_netlist = FakeNetwork::get_scored_moves(
+	auto raw_netlist = DLNetwork::get_scored_moves(
 		&state);
 
 	// DCNN returns winrate as side to move

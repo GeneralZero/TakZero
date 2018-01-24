@@ -1,8 +1,16 @@
 #pragma once
 #include <map>
 
-#define TakZero_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
-#define TakZero_VERSION_MINOR @Tutorial_VERSION_MINOR@
+#ifdef _WIN32
+#undef HAVE_SELECT
+#define NOMINMAX
+#else
+#define HAVE_SELECT
+#endif
+
+
+#define PROGRAM_NAME "TakZero"
+#define PROGRAM_VERSION "0.9.1"
 
 class ConfigStore
 {

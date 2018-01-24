@@ -3,10 +3,6 @@
 #include "config.h"
 
 #include <time.h>
-#ifdef _WIN32
-#define NOMINMAX
-#include <windows.h>
-#endif
 
 class Time {
 public:

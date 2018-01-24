@@ -100,7 +100,7 @@ std::array<FastBoard, 8> Board::getMLData() {
 	size_t start = this->prev_boards.size() - 1;
 	size_t end = start - 5;
 
-	auto ret = std::array<FastBoard, 8>{};
+	std::array<FastBoard, 8> ret;
 	size_t j = 0;
 	for (size_t i = start; i >= end; ) {
 		ret[j] = this->prev_boards[i];

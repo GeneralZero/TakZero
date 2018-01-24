@@ -4,7 +4,8 @@
 #include <utility>
 #include "Board.h"
 #include "UCTNode.h"
-#include "FakeNetwork.h"
+#include "DLNetwork.h"
+//#include "FakeNetwork.h"
 #include <iostream>
 #include <cstdint>
 #include <cstring>

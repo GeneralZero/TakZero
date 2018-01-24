@@ -27,6 +27,7 @@
 #include <random>
 
 #include <cassert>
+#undef max
 
 extern Utils::ThreadPool thread_pool;
 
@@ -47,9 +48,6 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 	else {
 		turn = Black;
 	}
-	auto hash = currstate.get_hash();
-
-	TTable::get_TT()->sync(hash, node);
 
 	auto result = SearchResult{};
 
@@ -98,7 +96,10 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 		if (next != nullptr) {
 			move = next->get_move();
 
+			//Plag move and update board
 			currstate.PlayIndex(move);
+			currstate.SaveFastBoard();
+
 			result = play_simulation(currstate, next);
 		}
 	}
@@ -108,7 +109,6 @@ SearchResult UCTSearch::play_simulation(Board & currstate, UCTNode* const node) 
 		node->update(result.eval());
 	}
 	node->virtual_loss_undo();
-	TTable::get_TT()->update(hash, node);
 
 	return result;
 }
@@ -151,6 +151,7 @@ void UCTSearch::dump_stats(Board & state, UCTNode & parent) {
 		Board tmpstate = state;
 
 		tmpstate.PlayIndex(parent.possoble_moves[i]->get_move());
+		tmpstate.SaveFastBoard();
 		pvstring += " " + get_pv(tmpstate, *parent.possoble_moves[i], 0);
 
 		Utils::myprintf("%s\n", pvstring.c_str());
@@ -204,6 +205,7 @@ std::string UCTSearch::get_pv(Board & state, UCTNode & parent, uint8_t depth) {
 	auto res = std::to_string(best_move);
 
 	state.PlayIndex(best_move);
+	state.SaveFastBoard();
 
 	if (depth< 3) {
 		auto next = get_pv(state, *best_child, depth + 1);

@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <array>
+
+//#include "DLNetwork.h"
 #include "Move.h"
 #include "TimeControl.h"
 
@@ -29,30 +31,26 @@ public:
 	void PlayPlace(Play move);
 	void WinnerPlace(PieceType piece, Location location);
 	void WinnerMove(std::vector<Location>);
-
-	void PrintMove(Play move);
-
+	void WallCrush(Location current_square, std::vector<Piece>);
 	bool ValidMove(int index);
-
 	void UpdateTops(Location location);
 
+	void PrintMove(Play move);
+	
 	std::uint16_t GetPlayIndex(Play move);
-
-	void WallCrush(Location current_square, std::vector<Piece>);
-
+	
 	std::uint8_t getArrayIndex(std::uint8_t x, std::uint8_t y);
 
+	//Index paramaters
 	void PlayIndex(Play move);
-
 	void PlayIndex(int index);
 
-	//Index paramaters
+	
 	std::vector<std::uint8_t> distance_table;
 
 	//Index functions
 	std::uint16_t GetPlacementIndex(Play move);
 	std::uint16_t GetMoveIndex(Play move);
-
 	std::vector<std::vector<std::uint8_t>> GenerateMoveArrays(std::uint8_t distance, std::uint8_t to_move, bool cap);
 
 	std::uint64_t get_hash();
@@ -62,11 +60,8 @@ public:
 	Play GetMoveFromIndex(std::uint16_t move);
 
 	void stop_clock(Player color);
-
 	void start_clock(Player color);
-
 	TimeControl & get_timecontrol();
-
 
 	//Utility Finctions
 	void print_board();

@@ -3,6 +3,8 @@
 #include "config.h"
 #include <limits>
 
+#undef min
+#undef max
 /*
 Random number generator xoroshiro128+
 */
@@ -13,14 +15,15 @@ public:
 	void seedrandom(std::uint64_t s);
 
 	// random numbers from 0 to max
-	template<int MAX>
+	template<int MAX_NUM>
 	std::uint32_t randfix() {
-		static_assert(0 < MAX && MAX < std::numeric_limits<std::uint32_t>::max(),
+		
+		static_assert(0 < MAX_NUM && MAX_NUM < std::numeric_limits<std::uint32_t>::max(),
 			"randfix out of range");
 		// Last bit isn't random, so don't use it in isolation. We specialize
 		// this case.
-		static_assert(MAX != 2, "don't isolate the LSB with xoroshiro128+");
-		return gen() % MAX;
+		static_assert(MAX_NUM != 2, "don't isolate the LSB with xoroshiro128+");
+		return gen() % MAX_NUM;
 	}
 
 	std::uint16_t randuint16(const std::uint16_t max);
@@ -35,12 +38,14 @@ public:
 
 	// UniformRandomBitGenerator interface
 	using result_type = std::uint64_t;
+	
 	constexpr static result_type min() {
 		return std::numeric_limits<result_type>::min();
 	}
 	constexpr static result_type max() {
 		return std::numeric_limits<result_type>::max();
 	}
+	
 	result_type operator()() {
 		return gen();
 	}

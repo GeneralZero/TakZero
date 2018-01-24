@@ -35,7 +35,8 @@ enum Direction
 
 enum Player {
 	White,
-	Black
+	Black,
+	Tie
 };
 
 struct Location

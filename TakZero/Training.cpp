@@ -1,8 +1,9 @@
 #include "Training.h"
-#include "FakeNetwork.h"
+#include "DLNetwork.h"
+//#include "FakeNetwork.h"
 #include <experimental/filesystem>
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#include <direct.h>
 #include <direct.h>
 #define SLASH "\\"
 #else
@@ -21,6 +22,7 @@
 #include "H5Cpp.h"
 
 #include <curl/curl.h>
+#include <curl/multi.h>
 
 std::vector<TimeStep> Training::m_data{};
 
@@ -30,7 +32,7 @@ void Training::record(Board & state, UCTNode & root)
 	step.planes = state.getMLData();
 
 	auto result =
-		FakeNetwork::get_scored_moves(&state);
+		DLNetwork::get_scored_moves(&state);
 	step.net_winrate = result.second;
 
 	// Get total visit amount. We count rather
@@ -320,54 +322,58 @@ int Training::uploadGame(std::string filename)
 {
 	CURLcode res;
 	CURL *curl;
-	curl_mime *mime1;
-	curl_mimepart *part1;
+	struct curl_httppost *post1;
+	struct curl_httppost *postend;
 
-	struct curl_httppost *post = NULL;
-	struct curl_httppost *last = NULL;
+	//Open file
+	std::string location = this->foldername + SLASH + filename;
+	//std::ifstream input(location, std::ios::binary);
+	// copies all data into buffer
+	//std::vector<char> buffer((
+	//	std::istreambuf_iterator<char>(input)),
+	//4	(std::istreambuf_iterator<char>()));
+
+	post1 = NULL;
+	postend = NULL;
+	curl_formadd(&post1, &postend,
+		CURLFORM_COPYNAME, "game",
+		CURLFORM_FILE, location.c_str(),
+		CURLFORM_CONTENTTYPE, "application/octet-stream",
+		CURLFORM_END);
+	curl_formadd(&post1, &postend,
+		CURLFORM_COPYNAME, "network",
+		CURLFORM_COPYCONTENTS, this->foldername,
+		CURLFORM_END);
+
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
 	curl = curl_easy_init();
 	if (curl) {
-		mime1 = NULL;
-
+		curl_easy_setopt(curl, CURLOPT_URL, "https://zero.generalzero.org/submit_game");
 		curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 102400L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
-		curl_easy_setopt(curl, CURLOPT_URL, "https://zero.generalzero.org/submit_game");
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-
-		//Open file
-		std::string location = this->foldername + SLASH + filename;
-		std::ifstream input(location, std::ios::binary);
-		// copies all data into buffer
-		std::vector<char> buffer((
-			std::istreambuf_iterator<char>(input)),
-			(std::istreambuf_iterator<char>()));
-
-		mime1 = curl_mime_init(curl);
-		part1 = curl_mime_addpart(mime1);
-		curl_mime_filedata(part1, location.c_str());
-		curl_mime_name(part1, "game");
-		part1 = curl_mime_addpart(mime1);
-		curl_mime_data(part1, this->foldername.c_str(), CURL_ZERO_TERMINATED);
-		curl_mime_name(part1, "network");
-		curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime1);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.57.0");
+		curl_easy_setopt(curl, CURLOPT_HTTPPOST, post1);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.47.0");
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
-		curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_2TLS);
+		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 		curl = NULL;
-		curl_mime_free(mime1);
-		mime1 = NULL;
+		curl_formfree(post1);
+		post1 = NULL;
 
 		/* Check for errors */
 		if (res != CURLE_OK){
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 				curl_easy_strerror(res));
 			return 0;
+		}
+		else {
+			// If uploaded file delete file
+			std::experimental::filesystem::remove(location);
 		}
 		return 1;
 	}
